@@ -1,0 +1,150 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0a2e"/>
+      <stop offset="50%" stop-color="#0d0d3a"/>
+      <stop offset="100%" stop-color="#0a0a1a"/>
+    </linearGradient>
+    <linearGradient id="shipBody" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#00e5ff"/>
+      <stop offset="100%" stop-color="#00607a"/>
+    </linearGradient>
+    <linearGradient id="shipWing" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#00b8d4"/>
+      <stop offset="100%" stop-color="#004d66"/>
+    </linearGradient>
+    <linearGradient id="engineGlow" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#00e5ff"/>
+      <stop offset="60%" stop-color="#00bcd4"/>
+      <stop offset="100%" stop-color="#00e5ff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="cockpitGlow" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#80deea"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="softGlow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="bigGlow">
+      <feGaussianBlur stdDeviation="20" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="180" fill="url(#bg)"/>
+
+  <!-- Subtle grid pattern -->
+  <g opacity="0.04" stroke="#00e5ff" stroke-width="1">
+    <line x1="0" y1="200" x2="1024" y2="200"/>
+    <line x1="0" y1="400" x2="1024" y2="400"/>
+    <line x1="0" y1="600" x2="1024" y2="600"/>
+    <line x1="0" y1="800" x2="1024" y2="800"/>
+    <line x1="200" y1="0" x2="200" y2="1024"/>
+    <line x1="400" y1="0" x2="400" y2="1024"/>
+    <line x1="600" y1="0" x2="600" y2="1024"/>
+    <line x1="800" y1="0" x2="800" y2="1024"/>
+  </g>
+
+  <!-- Stars -->
+  <g filter="url(#softGlow)">
+    <circle cx="150" cy="120" r="2" fill="#ffffff" opacity="0.9"/>
+    <circle cx="870" cy="90" r="2.5" fill="#ffffff" opacity="0.8"/>
+    <circle cx="920" cy="250" r="1.5" fill="#90caf9" opacity="0.7"/>
+    <circle cx="100" cy="350" r="1.8" fill="#b0bec5" opacity="0.6"/>
+    <circle cx="800" cy="180" r="1.2" fill="#ffffff" opacity="0.5"/>
+    <circle cx="200" cy="850" r="2" fill="#90caf9" opacity="0.7"/>
+    <circle cx="850" cy="800" r="1.5" fill="#ffffff" opacity="0.6"/>
+    <circle cx="130" cy="600" r="1" fill="#b0bec5" opacity="0.4"/>
+    <circle cx="900" cy="500" r="2.2" fill="#ffffff" opacity="0.5"/>
+    <circle cx="250" cy="200" r="1.3" fill="#78909c" opacity="0.6"/>
+    <circle cx="750" cy="350" r="1.8" fill="#ffffff" opacity="0.4"/>
+    <circle cx="300" cy="750" r="1.5" fill="#90caf9" opacity="0.5"/>
+    <circle cx="700" cy="900" r="2" fill="#ffffff" opacity="0.3"/>
+    <circle cx="500" cy="100" r="1.8" fill="#b0bec5" opacity="0.6"/>
+    <circle cx="520" cy="920" r="1.2" fill="#ffffff" opacity="0.4"/>
+  </g>
+
+  <!-- Ambient ship glow -->
+  <ellipse cx="512" cy="380" rx="200" ry="250" fill="#00e5ff" opacity="0.04" filter="url(#bigGlow)"/>
+
+  <!-- === SPACESHIP === -->
+  <g transform="translate(512, 370)" filter="url(#glow)">
+
+    <!-- Engine flame (behind ship) -->
+    <g filter="url(#softGlow)">
+      <polygon points="-18,80 18,80 8,180 -8,180" fill="url(#engineGlow)" opacity="0.7"/>
+      <polygon points="-12,80 12,80 5,150 -5,150" fill="#ffffff" opacity="0.5"/>
+    </g>
+
+    <!-- Left wing -->
+    <polygon points="-12,0 -90,70 -70,100 -12,60" fill="url(#shipWing)"/>
+
+    <!-- Right wing -->
+    <polygon points="12,0 90,70 70,100 12,60" fill="url(#shipWing)"/>
+
+    <!-- Left wing accent line -->
+    <line x1="-15" y1="5" x2="-85" y2="72" stroke="#00e5ff" stroke-width="2" opacity="0.6"/>
+
+    <!-- Right wing accent line -->
+    <line x1="15" y1="5" x2="85" y2="72" stroke="#00e5ff" stroke-width="2" opacity="0.6"/>
+
+    <!-- Main hull -->
+    <polygon points="0,-130 -18,0 -14,80 14,80 18,0" fill="url(#shipBody)"/>
+
+    <!-- Hull center line -->
+    <line x1="0" y1="-120" x2="0" y2="75" stroke="#ffffff" stroke-width="1.5" opacity="0.3"/>
+
+    <!-- Cockpit -->
+    <ellipse cx="0" cy="-60" rx="8" ry="14" fill="url(#cockpitGlow)" opacity="0.9"/>
+    <ellipse cx="0" cy="-64" rx="4" ry="6" fill="#ffffff" opacity="0.7"/>
+
+    <!-- Side engines -->
+    <rect x="-28" y="40" width="10" height="35" rx="3" fill="#0097a7"/>
+    <rect x="18" y="40" width="10" height="35" rx="3" fill="#0097a7"/>
+
+    <!-- Engine nozzle glow left -->
+    <ellipse cx="-23" cy="78" rx="6" ry="4" fill="#00e5ff" opacity="0.8" filter="url(#softGlow)"/>
+
+    <!-- Engine nozzle glow right -->
+    <ellipse cx="23" cy="78" rx="6" ry="4" fill="#00e5ff" opacity="0.8" filter="url(#softGlow)"/>
+
+    <!-- Nose tip glow -->
+    <circle cx="0" cy="-130" r="3" fill="#ffffff" opacity="0.9" filter="url(#softGlow)"/>
+  </g>
+
+  <!-- "SB" monogram below ship -->
+  <g transform="translate(512, 620)" filter="url(#softGlow)">
+    <text x="0" y="0" text-anchor="middle" font-family="'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" font-size="72" font-weight="800" letter-spacing="8" fill="#00e5ff" opacity="0.9">SB</text>
+  </g>
+
+  <!-- Subtitle -->
+  <g transform="translate(512, 670)">
+    <text x="0" y="0" text-anchor="middle" font-family="'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="400" letter-spacing="12" fill="#ffffff" opacity="0.4">BLASTER</text>
+  </g>
+
+  <!-- Bottom decorative line -->
+  <line x1="350" y1="710" x2="674" y2="710" stroke="#00e5ff" stroke-width="1.5" opacity="0.3"/>
+
+  <!-- Corner accents -->
+  <g stroke="#00e5ff" stroke-width="2" opacity="0.15" fill="none">
+    <path d="M 60,60 L 60,120 M 60,60 L 120,60"/>
+    <path d="M 964,60 L 964,120 M 964,60 L 904,60"/>
+    <path d="M 60,964 L 60,904 M 60,964 L 120,964"/>
+    <path d="M 964,964 L 964,904 M 964,964 L 904,964"/>
+  </g>
+</svg>
