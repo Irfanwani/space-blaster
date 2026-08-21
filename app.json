@@ -16,7 +16,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.spaceblaster.app",
+      "bundleIdentifier": "com.appshop.spaceblaster",
       "icon": "./assets/ios-icon.png"
     },
     "android": {
@@ -24,7 +24,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0a0a1a"
       },
-      "package": "com.spaceblaster.app",
+      "package": "com.appshop.spaceblaster",
       "versionCode": 1
     },
     "web": {
