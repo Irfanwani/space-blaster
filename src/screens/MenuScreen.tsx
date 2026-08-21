@@ -1,10 +1,13 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Animated, Platform } from 'react-native';
 import { COLORS } from '../constants';
 import { initStars, updateStars, StarField } from '../rendering/StarField';
 import { Star } from '../types';
+import { BannerAd, BannerAdSize, TestIds, useForeground } from 'react-native-google-mobile-ads';
 
 const logoImage = require('../../assets/icon.png');
+
+const BANNER_UNIT_ID = __DEV__ ? TestIds.BANNER : 'ca-app-pub-xxxxxxxxxxxxxxxx/yyyyyyyyyy';
 
 interface MenuScreenProps {
   onPlay: () => void;
@@ -13,11 +16,16 @@ interface MenuScreenProps {
 
 export const MenuScreen: React.FC<MenuScreenProps> = ({ onPlay, highScore }) => {
   const starsRef = useRef<Star[]>(initStars(60));
+  const bannerRef = useRef<BannerAd>(null);
   const [tick, setTick] = useState(0);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const logoScale = useRef(new Animated.Value(0.8)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useForeground(() => {
+    Platform.OS === 'ios' && bannerRef.current?.load();
+  });
 
   useEffect(() => {
     Animated.parallel([
@@ -69,7 +77,6 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({ onPlay, highScore }) => 
       <StarField stars={starsRef.current} />
 
       <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
-        {/* Logo */}
         <Animated.View
           style={[
             styles.logoContainer,
@@ -82,7 +89,6 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({ onPlay, highScore }) => 
           <Image source={logoImage} style={styles.logo} resizeMode="contain" />
         </Animated.View>
 
-        {/* High score */}
         {highScore > 0 && (
           <View style={styles.highScoreContainer}>
             <Text style={styles.highScoreLabel}>HIGH SCORE</Text>
@@ -90,14 +96,12 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({ onPlay, highScore }) => 
           </View>
         )}
 
-        {/* Play button */}
         <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
           <TouchableOpacity style={styles.playButton} onPress={onPlay}>
             <Text style={styles.playButtonText}>LAUNCH</Text>
           </TouchableOpacity>
         </Animated.View>
 
-        {/* Instructions */}
         <View style={styles.instructions}>
           <Text style={styles.instructionText}>DRAG TO MOVE</Text>
           <Text style={styles.instructionDot}>•</Text>
@@ -107,7 +111,14 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({ onPlay, highScore }) => 
         </View>
       </Animated.View>
 
-      {/* Version */}
+      <View style={styles.bannerContainer}>
+        <BannerAd
+          ref={bannerRef}
+          unitId={BANNER_UNIT_ID}
+          size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+        />
+      </View>
+
       <Text style={styles.version}>v1.0.0</Text>
     </View>
   );
@@ -179,6 +190,10 @@ const styles = StyleSheet.create({
   instructionDot: {
     color: '#333',
     fontSize: 8,
+  },
+  bannerContainer: {
+    alignItems: 'center',
+    paddingBottom: 10,
   },
   version: {
     position: 'absolute',

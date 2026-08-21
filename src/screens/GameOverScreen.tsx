@@ -1,14 +1,18 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, ActivityIndicator } from 'react-native';
 import { COLORS } from '../constants';
+import { SavedGameState } from '../types';
 import { initStars, updateStars, StarField } from '../rendering/StarField';
 import { Star } from '../types';
+import { showRewardedAd, preloadRewarded } from '../ads/AdService';
 
 interface GameOverScreenProps {
   score: number;
   wave: number;
   highScore: number;
   isNewHighScore: boolean;
+  savedGameState: SavedGameState | null;
+  onContinue: () => void;
   onRestart: () => void;
   onMenu: () => void;
 }
@@ -18,11 +22,15 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
   wave,
   highScore,
   isNewHighScore,
+  savedGameState,
+  onContinue,
   onRestart,
   onMenu,
 }) => {
   const starsRef = useRef<Star[]>(initStars(40));
   const [tick, setTick] = useState(0);
+  const [adLoading, setAdLoading] = useState(false);
+  const [adReady, setAdReady] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
 
@@ -40,6 +48,14 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
       }),
     ]).start();
 
+    if (savedGameState) {
+      preloadRewarded();
+      const checkReady = setInterval(() => {
+        setAdReady(true);
+        clearInterval(checkReady);
+      }, 1500);
+    }
+
     let frame: number;
     const animate = () => {
       updateStars(starsRef.current, 1 / 60);
@@ -48,7 +64,16 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
     };
     frame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(frame);
-  }, []);
+  }, [savedGameState]);
+
+  const handleWatchAd = useCallback(async () => {
+    setAdLoading(true);
+    const earned = await showRewardedAd();
+    setAdLoading(false);
+    if (earned) {
+      onContinue();
+    }
+  }, [onContinue]);
 
   return (
     <View style={[styles.container, { backgroundColor: COLORS.background }]}>
@@ -60,30 +85,47 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
           { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
         ]}
       >
-        {/* Game Over Title */}
         <Text style={styles.gameOverText}>MISSION FAILED</Text>
         <View style={styles.divider} />
 
-        {/* Score */}
         <View style={styles.statContainer}>
           <Text style={styles.statLabel}>FINAL SCORE</Text>
           <Text style={styles.statValue}>{score.toLocaleString()}</Text>
         </View>
 
-        {/* Wave reached */}
         <View style={styles.statContainer}>
           <Text style={styles.statLabel}>WAVE REACHED</Text>
           <Text style={[styles.statValue, { color: COLORS.wave }]}>{wave}</Text>
         </View>
 
-        {/* New high score */}
         {isNewHighScore && (
           <View style={styles.newHighScore}>
             <Text style={styles.newHighScoreText}>NEW HIGH SCORE!</Text>
           </View>
         )}
 
-        {/* Buttons */}
+        {savedGameState && (
+          <TouchableOpacity
+            style={[styles.continueButton, adLoading && styles.continueButtonDisabled]}
+            onPress={handleWatchAd}
+            disabled={adLoading}
+          >
+            {adLoading ? (
+              <View style={styles.continueLoading}>
+                <ActivityIndicator color="#000" size="small" />
+                <Text style={[styles.continueButtonText, { marginLeft: 10 }]}>
+                  LOADING...
+                </Text>
+              </View>
+            ) : (
+              <Text style={styles.continueButtonText}>WATCH AD TO CONTINUE</Text>
+            )}
+            <Text style={styles.continueSubtext}>
+              Resume from wave {savedGameState.wave}
+            </Text>
+          </TouchableOpacity>
+        )}
+
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.retryButton} onPress={onRestart}>
             <Text style={styles.retryButtonText}>RETRY</Text>
@@ -155,6 +197,39 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     letterSpacing: 2,
   },
+  continueButton: {
+    marginBottom: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    backgroundColor: '#00e676',
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#00e676',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  continueButtonDisabled: {
+    opacity: 0.7,
+  },
+  continueButtonText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: 'bold',
+    letterSpacing: 2,
+  },
+  continueSubtext: {
+    color: '#000',
+    fontSize: 11,
+    opacity: 0.6,
+    marginTop: 4,
+  },
+  continueLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   buttonContainer: {
     gap: 16,
     alignItems: 'center',
@@ -190,5 +265,3 @@ const styles = StyleSheet.create({
     letterSpacing: 3,
   },
 });
-
-GameOverScreen.displayName = 'GameOverScreen';

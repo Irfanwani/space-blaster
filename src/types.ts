@@ -117,3 +117,16 @@ export interface GameState {
 }
 
 export type GameScreen = 'menu' | 'playing' | 'gameOver';
+
+export interface SavedGameState {
+  score: number;
+  wave: number;
+  playerHealth: number;
+  playerMaxHealth: number;
+  playerPosition: Vec2;
+  shieldActive: boolean;
+  rapidFire: boolean;
+  multiShot: boolean;
+  comboCount: number;
+  totalEnemiesKilled: number;
+}

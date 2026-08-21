@@ -7,7 +7,7 @@ import {
   Text,
   TouchableOpacity,
 } from 'react-native';
-import { GameState } from '../types';
+import { GameState, SavedGameState, PlayerEntity } from '../types';
 import { SCREEN, COLORS } from '../constants';
 import { createPlayer, movePlayer, damagePlayer } from '../entities/Player';
 import {
@@ -37,25 +37,40 @@ import { ParticleView } from '../rendering/ParticleView';
 import { PowerUpView } from '../rendering/PowerUpView';
 import { HUD } from '../rendering/HUD';
 import { checkCollisions } from '../game/collision';
+import { shouldShowInterstitial, showInterstitialAd } from '../ads/AdService';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface GameScreenProps {
-  onGameOver: (score: number, wave: number) => void;
+  onGameOver: (score: number, wave: number, savedState: SavedGameState) => void;
   onBack: () => void;
+  savedState: SavedGameState | null;
 }
 
-function createInitialState(): GameState {
+function createInitialState(saved?: SavedGameState | null): GameState {
+  const player = createPlayer();
+
+  if (saved) {
+    player.health = saved.playerHealth;
+    player.maxHealth = saved.playerMaxHealth;
+    player.position = { ...saved.playerPosition };
+    player.shieldActive = saved.shieldActive;
+    player.rapidFire = saved.rapidFire;
+    player.multiShot = saved.multiShot;
+    player.invulnerable = true;
+    player.invulnerableTimer = 2000;
+  }
+
   return {
-    player: createPlayer(),
+    player,
     enemies: [],
     bullets: [],
     particles: [],
     powerUps: [],
     stars: initStars(80),
-    score: 0,
+    score: saved?.score ?? 0,
     highScore: 0,
-    wave: 0,
+    wave: saved?.wave ?? 0,
     waveTimer: 0,
     waveCooldown: 2000,
     gameOver: false,
@@ -64,24 +79,43 @@ function createInitialState(): GameState {
     deltaTime: 16,
     screenShake: { x: 0, y: 0 },
     screenShakeIntensity: 0,
-    comboCount: 0,
+    comboCount: saved?.comboCount ?? 0,
     comboTimer: 0,
-    totalEnemiesKilled: 0,
+    totalEnemiesKilled: saved?.totalEnemiesKilled ?? 0,
     bossActive: false,
     difficultyMultiplier: 1,
   };
 }
 
-export const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, onBack }) => {
+function captureSavedState(state: GameState): SavedGameState {
+  return {
+    score: state.score,
+    wave: state.wave,
+    playerHealth: state.player.health,
+    playerMaxHealth: state.player.maxHealth,
+    playerPosition: { ...state.player.position },
+    shieldActive: state.player.shieldActive,
+    rapidFire: state.player.rapidFire,
+    multiShot: state.player.multiShot,
+    comboCount: state.comboCount,
+    totalEnemiesKilled: state.totalEnemiesKilled,
+  };
+}
+
+export const GameScreen: React.FC<GameScreenProps> = ({
+  onGameOver,
+  onBack,
+  savedState,
+}) => {
   const [, forceRender] = useState(0);
-  const stateRef = useRef<GameState>(createInitialState());
+  const stateRef = useRef<GameState>(createInitialState(savedState));
   const pausedRef = useRef(false);
   const targetRef = useRef({ x: SCREEN_WIDTH / 2, y: SCREEN_HEIGHT - 100 });
   const lastTimeRef = useRef(performance.now());
   const thrusterTimerRef = useRef(0);
   const autoFireTimerRef = useRef(0);
-  const waveSpawnTimerRef = useRef(0);
   const gameOverCalledRef = useRef(false);
+  const lastInterstitialWaveRef = useRef(0);
   const rafRef = useRef(0);
 
   const setPaused = useCallback((value: boolean) => {
@@ -103,7 +137,6 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, onBack }) =>
     lastTimeRef.current = now;
     state.deltaTime = dt;
 
-    // --- Screen shake ---
     if (state.screenShakeIntensity > 0) {
       state.screenShake.x = (Math.random() - 0.5) * state.screenShakeIntensity;
       state.screenShake.y = (Math.random() - 0.5) * state.screenShakeIntensity;
@@ -115,19 +148,29 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, onBack }) =>
       }
     }
 
-    // --- Player movement ---
     movePlayer(state, targetRef.current.x, targetRef.current.y);
 
-    // --- Wave spawning ---
     state.waveTimer += dt;
     const activeEnemies = state.enemies.filter((e) => e.active);
     if (activeEnemies.length === 0 && state.waveTimer > state.waveCooldown) {
+      const prevWave = state.wave;
       state.wave++;
       state.waveTimer = 0;
       spawnWave(state);
+
+      if (
+        shouldShowInterstitial(state.wave) &&
+        state.wave !== lastInterstitialWaveRef.current
+      ) {
+        lastInterstitialWaveRef.current = state.wave;
+        pausedRef.current = true;
+        showInterstitialAd().then(() => {
+          pausedRef.current = false;
+          lastTimeRef.current = performance.now();
+        });
+      }
     }
 
-    // --- Enemy update + firing ---
     for (const enemy of state.enemies) {
       if (!enemy.active) continue;
       updateEnemy(enemy, state);
@@ -150,7 +193,6 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, onBack }) =>
       }
     }
 
-    // --- Auto-fire ---
     autoFireTimerRef.current += dt;
     const fireRate = state.player.rapidFire ? 80 : state.player.fireRate;
     if (autoFireTimerRef.current >= fireRate) {
@@ -167,13 +209,11 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, onBack }) =>
       state.bullets.push(...newBullets);
     }
 
-    // --- Update subsystems ---
     updateBullets(state);
     updateParticles(state);
     updatePowerUps(state);
     updateStars(state.stars, dt / 1000);
 
-    // --- Thruster particles ---
     thrusterTimerRef.current += dt;
     if (thrusterTimerRef.current > 50) {
       thrusterTimerRef.current = 0;
@@ -182,7 +222,6 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, onBack }) =>
       );
     }
 
-    // --- Combo timer ---
     if (state.comboTimer > 0) {
       state.comboTimer -= dt;
       if (state.comboTimer <= 0) {
@@ -190,7 +229,6 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, onBack }) =>
       }
     }
 
-    // --- Collisions ---
     const collisions = checkCollisions(state);
 
     for (const bulletId of collisions.bulletHits) {
@@ -232,7 +270,6 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, onBack }) =>
       }
     }
 
-    // --- Player hit ---
     if (collisions.playerHit) {
       const dead = damagePlayer(state, 1);
       if (dead) {
@@ -246,12 +283,12 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, onBack }) =>
         state.gameOver = true;
         if (!gameOverCalledRef.current) {
           gameOverCalledRef.current = true;
-          setTimeout(() => onGameOver(state.score, state.wave), 1500);
+          const saved = captureSavedState(state);
+          setTimeout(() => onGameOver(state.score, state.wave, saved), 1500);
         }
       }
     }
 
-    // --- Power-up collection ---
     for (const puId of collisions.powerUpHits) {
       const pu = state.powerUps.find((p) => p.id === puId);
       if (pu && pu.active) {
@@ -263,27 +300,26 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, onBack }) =>
       }
     }
 
-    // --- Cleanup ---
     state.enemies = state.enemies.filter((e) => e.active);
     state.bullets = state.bullets.filter((b) => b.active);
     state.particles = state.particles.filter((p) => p.active);
     state.powerUps = state.powerUps.filter((p) => p.active);
 
-    // --- Render ---
     forceRender((n) => n + 1);
     rafRef.current = requestAnimationFrame(gameLoop);
   }, [onGameOver]);
 
   useEffect(() => {
-    stateRef.current = createInitialState();
+    stateRef.current = createInitialState(savedState);
     lastTimeRef.current = performance.now();
     gameOverCalledRef.current = false;
+    pausedRef.current = false;
     rafRef.current = requestAnimationFrame(gameLoop);
 
     return () => {
       cancelAnimationFrame(rafRef.current);
     };
-  }, [gameLoop]);
+  }, [gameLoop, savedState]);
 
   const panResponder = useRef(
     PanResponder.create({
