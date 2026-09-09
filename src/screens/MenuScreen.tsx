@@ -3,11 +3,12 @@ import { View, Text, TouchableOpacity, StyleSheet, Image, Animated, Platform } f
 import { COLORS } from '../constants';
 import { initStars, updateStars, StarField } from '../rendering/StarField';
 import { Star } from '../types';
-import { BannerAd, BannerAdSize, TestIds, useForeground } from 'react-native-google-mobile-ads';
+import { BannerAd, BannerAdSize, useForeground } from 'react-native-google-mobile-ads';
+import { AD_UNIT_IDS } from '../ads/adConfig';
 
 const logoImage = require('../../assets/icon.png');
 
-const BANNER_UNIT_ID = __DEV__ ? TestIds.BANNER : 'ca-app-pub-xxxxxxxxxxxxxxxx/yyyyyyyyyy';
+const BANNER_UNIT_ID = AD_UNIT_IDS.banner;
 
 interface MenuScreenProps {
   onPlay: () => void;

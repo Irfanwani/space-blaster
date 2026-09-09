@@ -2,7 +2,6 @@ import mobileAds, {
   AppOpenAd,
   InterstitialAd,
   RewardedAd,
-  TestIds,
   AdEventType,
   RewardedAdEventType,
   BannerAdSize,
@@ -10,15 +9,11 @@ import mobileAds, {
 import { AD_UNIT_IDS, AD_CONFIG } from './adConfig';
 
 function getAdUnitId(type: 'appOpen' | 'interstitial' | 'rewarded' | 'banner'): string {
-  if (__DEV__) {
-    switch (type) {
-      case 'appOpen': return TestIds.APP_OPEN;
-      case 'interstitial': return TestIds.INTERSTITIAL;
-      case 'rewarded': return TestIds.REWARDED;
-      case 'banner': return TestIds.BANNER;
-    }
+  const id = AD_UNIT_IDS[type];
+  if (!id) {
+    console.warn(`[Ads] Missing ad unit ID for "${type}" — check your .env file`);
   }
-  return AD_UNIT_IDS![type];
+  return id;
 }
 
 let appOpenAd: AppOpenAd | null = null;
