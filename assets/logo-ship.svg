@@ -1,22 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
   <defs>
-    <!-- ============ BACKGROUND ============ -->
     <radialGradient id="bgRadial" cx="50%" cy="42%" r="75%">
       <stop offset="0%" stop-color="#101044"/>
       <stop offset="45%" stop-color="#0a0a2e"/>
       <stop offset="100%" stop-color="#050510"/>
     </radialGradient>
-    <radialGradient id="nebulaCyan" cx="30%" cy="25%" r="60%">
-      <stop offset="0%" stop-color="#00e5ff" stop-opacity="0.28"/>
-      <stop offset="100%" stop-color="#00e5ff" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="nebulaMagenta" cx="75%" cy="75%" r="65%">
-      <stop offset="0%" stop-color="#ff2d78" stop-opacity="0.20"/>
-      <stop offset="100%" stop-color="#ff2d78" stop-opacity="0"/>
-    </radialGradient>
 
-    <!-- ============ SHIP METAL ============ -->
-    <!-- Main hull: metallic cyan, lit from top-left -->
     <linearGradient id="hull" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#b2f3ff"/>
       <stop offset="18%" stop-color="#4fd8ff"/>
@@ -24,12 +13,10 @@
       <stop offset="70%" stop-color="#005f8a"/>
       <stop offset="100%" stop-color="#002c4d"/>
     </linearGradient>
-    <!-- Hull highlight / rim light top -->
     <linearGradient id="hullRim" x1="50%" y1="0%" x2="50%" y2="100%">
       <stop offset="0%" stop-color="#ffffff"/>
       <stop offset="40%" stop-color="#ffffff" stop-opacity="0"/>
     </linearGradient>
-    <!-- Wing metal -->
     <linearGradient id="wingL" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#86e6ff"/>
       <stop offset="40%" stop-color="#31c1ec"/>
@@ -42,19 +29,16 @@
       <stop offset="75%" stop-color="#0a75a8"/>
       <stop offset="100%" stop-color="#04334f"/>
     </linearGradient>
-    <!-- Wing leading edge accent -->
     <linearGradient id="edgeAccent" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#ffffff"/>
       <stop offset="100%" stop-color="#00e5ff"/>
     </linearGradient>
-    <!-- Cockpit glass -->
     <radialGradient id="cockpit" cx="35%" cy="30%" r="80%">
       <stop offset="0%" stop-color="#ffffff"/>
       <stop offset="30%" stop-color="#9ff2ff"/>
       <stop offset="70%" stop-color="#1fb8e0"/>
       <stop offset="100%" stop-color="#0a4a66"/>
     </radialGradient>
-    <!-- Engine flame -->
     <linearGradient id="flame" x1="50%" y1="0%" x2="50%" y2="100%">
       <stop offset="0%" stop-color="#ffffff"/>
       <stop offset="25%" stop-color="#c8fbff"/>
@@ -63,7 +47,6 @@
       <stop offset="100%" stop-color="#00e5ff" stop-opacity="0"/>
     </linearGradient>
 
-    <!-- ============ FILTERS ============ -->
     <filter id="glowBig" x="-60%" y="-60%" width="220%" height="220%">
       <feGaussianBlur stdDeviation="36" result="b"/>
       <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
@@ -78,79 +61,42 @@
     </filter>
   </defs>
 
-  <!-- ====== BACKGROUND RECT (rounded, for app icon) ====== -->
-  <rect width="1024" height="1024" rx="220" fill="url(#bgRadial)"/>
-
-  <!-- ====== NEBULA GLOWS ====== -->
-  <ellipse cx="320" cy="280" rx="520" ry="420" fill="url(#nebulaCyan)"/>
-  <ellipse cx="720" cy="760" rx="520" ry="460" fill="url(#nebulaMagenta)"/>
-
-  <!-- ====== FINE STARS ====== -->
-  <g fill="#ffffff">
-    <circle cx="160" cy="180" r="3"/><circle cx="840" cy="130" r="2.5"/><circle cx="900" cy="360" r="2"/>
-    <circle cx="120" cy="430" r="2"/><circle cx="740" cy="210" r="2.6"/><circle cx="250" cy="820" r="2.4"/>
-    <circle cx="830" cy="760" r="2"/><circle cx="480" cy="110" r="2"/><circle cx="600" cy="900" r="2.5"/>
-    <g fill="#9af0ff">
-      <circle cx="210" cy="90" r="1.5"/><circle cx="640" cy="170" r="1.8"/>
-      <circle cx="330" cy="700" r="1.5"/><circle cx="780" cy="620" r="1.6"/>
-      <circle cx="960" cy="540" r="1.4"/><circle cx="60" cy="660" r="1.6"/>
-    </g>
-  </g>
-
-  <!-- ====== AMBIENT SHIP HALO ====== -->
-  <ellipse cx="512" cy="470" rx="330" ry="300" fill="#00e5ff" opacity="0.10" filter="url(#glowBig)"/>
-
-  <!-- =================== THE SPACESHIP (3D) =================== -->
-  <g transform="translate(512, 452)">
+  <g transform="translate(512, 520)">
     <!-- ===== ENGINES / FLAMES (behind ship) ===== -->
     <g filter="url(#glowMed)">
       <polygon points="-118,92 -78,86 -88,190 -118,188" fill="url(#flame)" opacity="0.9"/>
       <polygon points="118,92 78,86 88,190 118,188" fill="url(#flame)" opacity="0.9"/>
-      <polygon points="0,120 0,105 0,200 0,205" fill="url(#flame)" opacity="0"/> <!-- placeholder -->
     </g>
     <g filter="url(#glowSoft)">
       <polygon points="-104,96 -86,92 -92,140 -104,140" fill="#ffffff" opacity="0.8"/>
       <polygon points="104,96 86,92 92,140 104,140" fill="#ffffff" opacity="0.8"/>
     </g>
 
-    <!-- ===== WINGS (underside layer, slight 3D depth) ===== -->
-    <!-- Left wing with bevel -->
+    <!-- ===== WINGS ===== -->
     <path d="M -30,10 L -300,120 L -270,168 L -92,150 L -38,58 Z" fill="url(#wingL)"/>
-    <!-- Left wing top bevel / highlight -->
     <path d="M -30,10 L -300,120 L -282,126 L -46,30 Z" fill="url(#edgeAccent)" opacity="0.55"/>
-    <!-- Left wing edge glow strip -->
-    <path d="M -30,10 L -300,120 L -292,130 L -38,28 Z" fill="#cafcff" opacity="0.5" filter="url(#glowSoft)"/>
-
-    <!-- Right wing -->
+    <path d="M -38,58 L -270,168 L -92,150 Z" fill="#003049" opacity="0.35"/>
     <path d="M 30,10 L 300,120 L 270,168 L 92,150 L 38,58 Z" fill="url(#wingR)"/>
     <path d="M 30,10 L 300,120 L 282,126 L 46,30 Z" fill="url(#edgeAccent)" opacity="0.55"/>
-    <path d="M 30,10 L 300,120 L 292,130 L 38,28 Z" fill="#cafcff" opacity="0.5" filter="url(#glowSoft)"/>
+    <path d="M 38,58 L 270,168 L 92,150 Z" fill="#003049" opacity="0.35"/>
 
-    <!-- ===== WING TIP NODES (glowing) ===== -->
     <circle cx="-300" cy="120" r="14" fill="#00e5ff" opacity="0.9" filter="url(#glowSoft)"/>
     <circle cx="-300" cy="120" r="6" fill="#ffffff"/>
     <circle cx="300" cy="120" r="14" fill="#00e5ff" opacity="0.9" filter="url(#glowSoft)"/>
     <circle cx="300" cy="120" r="6" fill="#ffffff"/>
 
-    <!-- ===== MAIN HULL (3D body) ===== -->
-    <!-- Body shadow / underside -->
+    <!-- ===== MAIN HULL ===== -->
     <path d="M 0,-210 L -32,-40 L -44,96 C -24,138 24,138 44,96 L 32,-40 Z" fill="#003049"/>
-    <!-- Body -->
     <path d="M 0,-210 L -34,-35 L -46,92 C -22,140 22,140 46,92 L 34,-35 Z" fill="url(#hull)"/>
-    <!-- Top rim highlight -->
     <path d="M 0,-208 L -30,-30 L -40,90 C -20,132 20,132 40,90 L 30,-30 Z" fill="url(#hullRim)" opacity="0.5"/>
-    <!-- Ridge spine line highlight -->
     <path d="M 0,-205 L 0,120" stroke="#eafdff" stroke-width="7" opacity="0.35" stroke-linecap="round"/>
 
-    <!-- Nose cone sharp highlight -->
     <path d="M -6,-208 L 0,-214 L 6,-208 L 0,-30 Z" fill="#ffffff" opacity="0.85"/>
     <circle cx="0" cy="-202" r="6" fill="#ffffff" opacity="0.95" filter="url(#glowSoft)"/>
 
-    <!-- ===== COCKPIT (glossy glass) ===== -->
+    <!-- ===== COCKPIT ===== -->
     <path d="M -20,-58 C -20,-92 -16,-104 0,-112 C 16,-104 20,-92 20,-58 C 20,-40 -20,-40 -20,-58 Z" fill="url(#cockpit)"/>
-    <!-- cockpit specular highlight -->
     <path d="M -13,-70 C -13,-88 -9,-98 0,-104 C -4,-100 -9,-98 -13,-95 Z" fill="#ffffff" opacity="0.7"/>
-    <!-- glass reflection line -->
     <ellipse cx="-9" cy="-76" rx="4" ry="10" fill="#ffffff" opacity="0.8"/>
 
     <!-- ===== SIDE ENGINE HOUSINGS ===== -->
@@ -159,30 +105,15 @@
     <rect x="84" y="18" width="34" height="68" rx="8" fill="#00506f"/>
     <rect x="90" y="22" width="22" height="60" rx="6" fill="url(#hull)"/>
 
-    <!-- Engine nozzles -->
     <ellipse cx="-101" cy="88" rx="14" ry="8" fill="#0a4a66"/>
     <ellipse cx="-101" cy="88" rx="8" ry="4" fill="#00e5ff" filter="url(#glowSoft)"/>
     <ellipse cx="101" cy="88" rx="14" ry="8" fill="#0a4a66"/>
     <ellipse cx="101" cy="88" rx="8" ry="4" fill="#00e5ff" filter="url(#glowSoft)"/>
 
-    <!-- Central lower thruster -->
-    <circle cx="0" cy="112" r="16" fill="#004b66" opacity="0.0"/>
     <ellipse cx="0" cy="118" rx="14" ry="9" fill="#0a4a66"/>
     <ellipse cx="0" cy="114" rx="8" ry="4" fill="#00e5ff" filter="url(#glowSoft)"/>
 
-    <!-- Center engine flame (big glow) -->
     <path d="M -10,124 C -14,150 -4,180 0,188 C 4,180 14,150 10,124 Z" fill="url(#flame)" filter="url(#glowMed)"/>
     <path d="M -5,122 C -7,142 -1,158 0,164 C 1,158 7,142 5,122 Z" fill="#ffffff" opacity="0.9"/>
-  </g>
-
-  <!-- ====== GLOBAL KEY LIGHT (soft white top-left) ====== -->
-  <ellipse cx="360" cy="260" rx="360" ry="300" fill="#ffffff" opacity="0.05"/>
-
-  <!-- ====== CORNER ACCENTS ====== -->
-  <g stroke="#00e5ff" stroke-width="3" opacity="0.18" fill="none" stroke-linecap="round">
-    <path d="M 96,96 L 96,170 M 96,96 L 170,96"/>
-    <path d="M 928,96 L 928,170 M 928,96 L 854,96"/>
-    <path d="M 96,928 L 96,854 M 96,928 L 170,928"/>
-    <path d="M 928,928 L 928,854 M 928,928 L 854,928"/>
   </g>
 </svg>
