@@ -1,6 +1,6 @@
 import { ParticleEntity, GameState, Vec2 } from '../types';
 import { COLORS } from '../constants';
-import { generateId, randomRange, randomColor, hexToRgba } from '../utils';
+import { generateId, randomRange, randomColor } from '../utils';
 
 export function createExplosion(
   position: Vec2,

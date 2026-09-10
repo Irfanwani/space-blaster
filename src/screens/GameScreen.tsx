@@ -6,9 +6,10 @@ import {
   Dimensions,
   Text,
   TouchableOpacity,
+  Vibration,
 } from 'react-native';
-import { GameState, SavedGameState, PlayerEntity } from '../types';
-import { SCREEN, COLORS } from '../constants';
+import { GameState, SavedGameState, GameSettings } from '../types';
+import { COLORS, DEFAULT_SETTINGS, DIFFICULTY_MULTIPLIERS } from '../constants';
 import { createPlayer, movePlayer, damagePlayer } from '../entities/Player';
 import {
   updateEnemy,
@@ -29,7 +30,7 @@ import {
   applyPowerUp,
   shouldDropPowerUp,
 } from '../entities/PowerUp';
-import { initStars, updateStars, StarField } from '../rendering/StarField';
+import { initStars, updateStars, initNebulae, updateNebulae, StarField } from '../rendering/StarField';
 import { PlayerShip } from '../rendering/PlayerShip';
 import { EnemyShip } from '../rendering/EnemyShip';
 import { BulletView } from '../rendering/BulletView';
@@ -45,10 +46,18 @@ interface GameScreenProps {
   onGameOver: (score: number, wave: number, savedState: SavedGameState) => void;
   onBack: () => void;
   savedState: SavedGameState | null;
+  settings: GameSettings;
 }
 
-function createInitialState(saved?: SavedGameState | null): GameState {
+function createInitialState(saved?: SavedGameState | null, settings?: GameSettings): GameState {
   const player = createPlayer();
+  const effectiveSettings = settings || DEFAULT_SETTINGS;
+  const nebulaCount =
+    effectiveSettings.visualEffects === 'low'
+      ? 0
+      : effectiveSettings.visualEffects === 'medium'
+      ? 3
+      : 5;
 
   if (saved) {
     player.health = saved.playerHealth;
@@ -57,6 +66,9 @@ function createInitialState(saved?: SavedGameState | null): GameState {
     player.shieldActive = saved.shieldActive;
     player.rapidFire = saved.rapidFire;
     player.multiShot = saved.multiShot;
+    player.speedBoost = saved.speedBoost;
+    player.homingActive = saved.homingActive;
+    player.magnetActive = saved.magnetActive;
     player.invulnerable = true;
     player.invulnerableTimer = 2000;
   }
@@ -67,7 +79,8 @@ function createInitialState(saved?: SavedGameState | null): GameState {
     bullets: [],
     particles: [],
     powerUps: [],
-    stars: initStars(80),
+    stars: initStars(effectiveSettings.starCount),
+    nebulae: initNebulae(nebulaCount),
     score: saved?.score ?? 0,
     highScore: 0,
     wave: saved?.wave ?? 0,
@@ -83,7 +96,11 @@ function createInitialState(saved?: SavedGameState | null): GameState {
     comboTimer: 0,
     totalEnemiesKilled: saved?.totalEnemiesKilled ?? 0,
     bossActive: false,
-    difficultyMultiplier: 1,
+    difficultyMultiplier: DIFFICULTY_MULTIPLIERS[effectiveSettings.difficulty],
+    settings: effectiveSettings,
+    fps: 60,
+    fpsTimer: 0,
+    fpsCount: 0,
   };
 }
 
@@ -97,6 +114,9 @@ function captureSavedState(state: GameState): SavedGameState {
     shieldActive: state.player.shieldActive,
     rapidFire: state.player.rapidFire,
     multiShot: state.player.multiShot,
+    speedBoost: state.player.speedBoost,
+    homingActive: state.player.homingActive,
+    magnetActive: state.player.magnetActive,
     comboCount: state.comboCount,
     totalEnemiesKilled: state.totalEnemiesKilled,
   };
@@ -106,9 +126,10 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   onGameOver,
   onBack,
   savedState,
+  settings,
 }) => {
   const [, forceRender] = useState(0);
-  const stateRef = useRef<GameState>(createInitialState(savedState));
+  const stateRef = useRef<GameState>(createInitialState(savedState, settings));
   const pausedRef = useRef(false);
   const targetRef = useRef({ x: SCREEN_WIDTH / 2, y: SCREEN_HEIGHT - 100 });
   const lastTimeRef = useRef(performance.now());
@@ -127,6 +148,14 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     const state = stateRef.current;
     const now = performance.now();
 
+    state.fpsCount++;
+    state.fpsTimer += now - (lastTimeRef.current || now);
+    if (state.fpsTimer >= 1000) {
+      state.fps = state.fpsCount;
+      state.fpsCount = 0;
+      state.fpsTimer = 0;
+    }
+
     if (pausedRef.current || state.gameOver) {
       lastTimeRef.current = now;
       rafRef.current = requestAnimationFrame(gameLoop);
@@ -137,7 +166,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     lastTimeRef.current = now;
     state.deltaTime = dt;
 
-    if (state.screenShakeIntensity > 0) {
+    if (state.settings.screenShake && state.screenShakeIntensity > 0) {
       state.screenShake.x = (Math.random() - 0.5) * state.screenShakeIntensity;
       state.screenShake.y = (Math.random() - 0.5) * state.screenShakeIntensity;
       state.screenShakeIntensity *= 0.9;
@@ -146,6 +175,9 @@ export const GameScreen: React.FC<GameScreenProps> = ({
         state.screenShake.x = 0;
         state.screenShake.y = 0;
       }
+    } else if (!state.settings.screenShake) {
+      state.screenShake.x = 0;
+      state.screenShake.y = 0;
     }
 
     movePlayer(state, targetRef.current.x, targetRef.current.y);
@@ -153,7 +185,6 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     state.waveTimer += dt;
     const activeEnemies = state.enemies.filter((e) => e.active);
     if (activeEnemies.length === 0 && state.waveTimer > state.waveCooldown) {
-      const prevWave = state.wave;
       state.wave++;
       state.waveTimer = 0;
       spawnWave(state);
@@ -193,33 +224,44 @@ export const GameScreen: React.FC<GameScreenProps> = ({
       }
     }
 
-    autoFireTimerRef.current += dt;
-    const fireRate = state.player.rapidFire ? 80 : state.player.fireRate;
-    if (autoFireTimerRef.current >= fireRate) {
-      autoFireTimerRef.current = 0;
-      const newBullets = createPlayerBullet(
-        state,
-        {
-          x: state.player.position.x,
-          y: state.player.position.y - state.player.height / 2,
-        },
-        { x: 0, y: -1 },
-        state.player.multiShot
-      );
-      state.bullets.push(...newBullets);
+    if (state.settings.autoFire) {
+      autoFireTimerRef.current += dt;
+      const fireRate = state.player.rapidFire ? 80 : state.player.fireRate;
+      if (autoFireTimerRef.current >= fireRate) {
+        autoFireTimerRef.current = 0;
+        const newBullets = createPlayerBullet(
+          state,
+          {
+            x: state.player.position.x,
+            y: state.player.position.y - state.player.height / 2,
+          },
+          { x: 0, y: -1 },
+          state.player.multiShot
+        );
+        state.bullets.push(...newBullets);
+      }
     }
 
     updateBullets(state);
     updateParticles(state);
     updatePowerUps(state);
     updateStars(state.stars, dt / 1000);
+    updateNebulae(state.nebulae, dt / 1000);
 
     thrusterTimerRef.current += dt;
     if (thrusterTimerRef.current > 50) {
       thrusterTimerRef.current = 0;
-      state.particles.push(
-        createThrusterParticle(state.player.position, state.player.thrustLevel)
-      );
+      const thrustCount =
+        state.settings.particleQuality === 'low'
+          ? 1
+          : state.settings.particleQuality === 'medium'
+          ? 2
+          : 3;
+      for (let i = 0; i < thrustCount; i++) {
+        state.particles.push(
+          createThrusterParticle(state.player.position, state.player.thrustLevel)
+        );
+      }
     }
 
     if (state.comboTimer > 0) {
@@ -251,16 +293,25 @@ export const GameScreen: React.FC<GameScreenProps> = ({
               state.comboTimer = 2000;
               state.totalEnemiesKilled++;
 
+              const particleMult =
+                state.settings.particleQuality === 'low'
+                  ? 0.5
+                  : state.settings.particleQuality === 'medium'
+                  ? 0.8
+                  : 1;
+
               state.particles.push(
                 ...createExplosion(
                   enemy.position,
-                  enemy.enemyType === 'boss' ? 30 : 12
+                  enemy.enemyType === 'boss'
+                    ? Math.floor(30 * particleMult)
+                    : Math.floor(12 * particleMult)
                 )
               );
               state.screenShakeIntensity =
                 enemy.enemyType === 'boss' ? 15 : 5;
 
-              if (shouldDropPowerUp()) {
+              if (shouldDropPowerUp(enemy.enemyType === 'boss')) {
                 state.powerUps.push(createPowerUp(enemy.position));
               }
             }
@@ -272,6 +323,9 @@ export const GameScreen: React.FC<GameScreenProps> = ({
 
     if (collisions.playerHit) {
       const dead = damagePlayer(state, 1);
+      if (state.settings.vibration) {
+        Vibration.vibrate(80);
+      }
       if (dead) {
         state.particles.push(
           ...createExplosion(state.player.position, 40, [
@@ -297,6 +351,23 @@ export const GameScreen: React.FC<GameScreenProps> = ({
         state.particles.push(
           ...createExplosion(pu.position, 8, [COLORS.powerUp[pu.powerUpType]])
         );
+
+        if (pu.powerUpType === 'bomb') {
+          for (const enemy of state.enemies) {
+            if (!enemy.active) continue;
+            state.particles.push(
+              ...createExplosion(
+                enemy.position,
+                enemy.enemyType === 'boss' ? 30 : 12
+              )
+            );
+          }
+          state.screenShakeIntensity = 20;
+        }
+
+        if (state.settings.vibration) {
+          Vibration.vibrate(pu.powerUpType === 'bomb' ? 50 : 10);
+        }
       }
     }
 
@@ -310,7 +381,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   }, [onGameOver]);
 
   useEffect(() => {
-    stateRef.current = createInitialState(savedState);
+    stateRef.current = createInitialState(savedState, settings);
     lastTimeRef.current = performance.now();
     gameOverCalledRef.current = false;
     pausedRef.current = false;
@@ -319,7 +390,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     return () => {
       cancelAnimationFrame(rafRef.current);
     };
-  }, [gameLoop, savedState]);
+  }, [gameLoop, savedState, settings]);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -352,7 +423,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           ],
         }}
       >
-        <StarField stars={state.stars} />
+        <StarField stars={state.stars} nebulae={state.nebulae} />
 
         {state.player.active && <PlayerShip player={state.player} />}
 

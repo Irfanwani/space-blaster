@@ -1,8 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, Animated, Platform } from 'react-native';
 import { COLORS } from '../constants';
-import { initStars, updateStars, StarField } from '../rendering/StarField';
-import { Star } from '../types';
+import { initStars, updateStars, initNebulae, updateNebulae, StarField } from '../rendering/StarField';
+import { Star, Nebula } from '../types';
 import { BannerAd, BannerAdSize, useForeground } from 'react-native-google-mobile-ads';
 import { AD_UNIT_IDS } from '../ads/adConfig';
 
@@ -12,11 +12,13 @@ const BANNER_UNIT_ID = AD_UNIT_IDS.banner;
 
 interface MenuScreenProps {
   onPlay: () => void;
+  onSettings: () => void;
   highScore: number;
 }
 
-export const MenuScreen: React.FC<MenuScreenProps> = ({ onPlay, highScore }) => {
-  const starsRef = useRef<Star[]>(initStars(60));
+export const MenuScreen: React.FC<MenuScreenProps> = ({ onPlay, onSettings, highScore }) => {
+  const starsRef = useRef<Star[]>(initStars(80));
+  const nebulaeRef = useRef<Nebula[]>(initNebulae(4));
   const bannerRef = useRef<BannerAd>(null);
   const [tick, setTick] = useState(0);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -66,6 +68,7 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({ onPlay, highScore }) => 
     let frame: number;
     const animate = () => {
       updateStars(starsRef.current, 1 / 60);
+      updateNebulae(nebulaeRef.current, 1 / 60);
       setTick((t) => t + 1);
       frame = requestAnimationFrame(animate);
     };
@@ -75,7 +78,7 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({ onPlay, highScore }) => 
 
   return (
     <View style={[styles.container, { backgroundColor: COLORS.background }]}>
-      <StarField stars={starsRef.current} />
+      <StarField stars={starsRef.current} nebulae={nebulaeRef.current} />
 
       <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
         <Animated.View
@@ -102,6 +105,10 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({ onPlay, highScore }) => 
             <Text style={styles.playButtonText}>LAUNCH</Text>
           </TouchableOpacity>
         </Animated.View>
+
+        <TouchableOpacity style={styles.settingsButton} onPress={onSettings}>
+          <Text style={styles.settingsButtonText}>SETTINGS</Text>
+        </TouchableOpacity>
 
         <View style={styles.instructions}>
           <Text style={styles.instructionText}>DRAG TO MOVE</Text>
@@ -176,10 +183,24 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     letterSpacing: 4,
   },
+  settingsButton: {
+    marginTop: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 40,
+    borderWidth: 1,
+    borderColor: '#444',
+    borderRadius: 10,
+  },
+  settingsButtonText: {
+    color: '#999',
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 3,
+  },
   instructions: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 50,
+    marginTop: 40,
     gap: 10,
   },
   instructionText: {

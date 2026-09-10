@@ -8,7 +8,7 @@ interface HUDProps {
 }
 
 export const HUD: React.FC<HUDProps> = ({ state }) => {
-  const { player, score, wave, comboCount, comboTimer } = state;
+  const { player, score, wave, comboCount, comboTimer, settings, fps } = state;
 
   return (
     <View style={styles.container}>
@@ -43,6 +43,12 @@ export const HUD: React.FC<HUDProps> = ({ state }) => {
                       ? COLORS.healthLow
                       : COLORS.health
                     : '#333',
+                shadowColor:
+                  i < player.health
+                    ? player.health <= 2
+                      ? COLORS.healthLow
+                      : COLORS.health
+                    : 'transparent',
               },
             ]}
           />
@@ -51,21 +57,42 @@ export const HUD: React.FC<HUDProps> = ({ state }) => {
 
       <View style={styles.powerUpContainer}>
         {player.shieldActive && (
-          <View style={[styles.powerUpBadge, { borderColor: COLORS.powerUp.shield }]}>
+          <View style={[styles.powerUpBadge, { borderColor: COLORS.powerUp.shield, backgroundColor: 'rgba(0,229,255,0.1)' }]}>
             <Text style={[styles.powerUpText, { color: COLORS.powerUp.shield }]}>SHIELD</Text>
           </View>
         )}
         {player.rapidFire && (
-          <View style={[styles.powerUpBadge, { borderColor: COLORS.powerUp.rapidFire }]}>
+          <View style={[styles.powerUpBadge, { borderColor: COLORS.powerUp.rapidFire, backgroundColor: 'rgba(255,145,0,0.1)' }]}>
             <Text style={[styles.powerUpText, { color: COLORS.powerUp.rapidFire }]}>RAPID</Text>
           </View>
         )}
         {player.multiShot && (
-          <View style={[styles.powerUpBadge, { borderColor: COLORS.powerUp.multiShot }]}>
+          <View style={[styles.powerUpBadge, { borderColor: COLORS.powerUp.multiShot, backgroundColor: 'rgba(224,64,251,0.1)' }]}>
             <Text style={[styles.powerUpText, { color: COLORS.powerUp.multiShot }]}>MULTI</Text>
           </View>
         )}
+        {player.speedBoost && (
+          <View style={[styles.powerUpBadge, { borderColor: COLORS.powerUp.speedBoost, backgroundColor: 'rgba(255,234,0,0.1)' }]}>
+            <Text style={[styles.powerUpText, { color: COLORS.powerUp.speedBoost }]}>SPEED</Text>
+          </View>
+        )}
+        {player.homingActive && (
+          <View style={[styles.powerUpBadge, { borderColor: COLORS.powerUp.homing, backgroundColor: 'rgba(68,138,255,0.1)' }]}>
+            <Text style={[styles.powerUpText, { color: COLORS.powerUp.homing }]}>HOME</Text>
+          </View>
+        )}
+        {player.magnetActive && (
+          <View style={[styles.powerUpBadge, { borderColor: COLORS.powerUp.magnet, backgroundColor: 'rgba(255,128,171,0.1)' }]}>
+            <Text style={[styles.powerUpText, { color: COLORS.powerUp.magnet }]}>MAG</Text>
+          </View>
+        )}
       </View>
+
+      {settings.showFPS && (
+        <View style={styles.fpsContainer}>
+          <Text style={styles.fpsText}>{fps} FPS</Text>
+        </View>
+      )}
     </View>
   );
 };
@@ -83,7 +110,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   scoreLabel: {
-    color: '#888',
+    color: '#666',
     fontSize: 10,
     fontWeight: '600',
     letterSpacing: 2,
@@ -93,6 +120,9 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     fontVariant: ['tabular-nums'],
+    textShadowColor: 'rgba(255,255,255,0.1)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 4,
   },
   waveContainer: {
     position: 'absolute',
@@ -101,7 +131,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   waveLabel: {
-    color: '#888',
+    color: '#666',
     fontSize: 10,
     fontWeight: '600',
     letterSpacing: 2,
@@ -110,6 +140,9 @@ const styles = StyleSheet.create({
     color: COLORS.wave,
     fontSize: 24,
     fontWeight: 'bold',
+    textShadowColor: COLORS.wave,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 4,
   },
   comboContainer: {
     position: 'absolute',
@@ -137,23 +170,38 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 3,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 3,
   },
   powerUpContainer: {
     flexDirection: 'row',
     position: 'absolute',
     top: 110,
     left: 20,
-    gap: 6,
+    gap: 5,
+    flexWrap: 'wrap',
+    maxWidth: 200,
   },
   powerUpBadge: {
     borderWidth: 1,
     borderRadius: 4,
-    paddingHorizontal: 6,
+    paddingHorizontal: 5,
     paddingVertical: 2,
   },
   powerUpText: {
-    fontSize: 8,
+    fontSize: 7,
     fontWeight: 'bold',
-    letterSpacing: 1,
+    letterSpacing: 0.5,
+  },
+  fpsContainer: {
+    position: 'absolute',
+    top: 130,
+    right: 20,
+  },
+  fpsText: {
+    color: '#555',
+    fontSize: 10,
+    fontVariant: ['tabular-nums'],
   },
 });

@@ -1,12 +1,14 @@
 import { PlayerEntity, GameState } from '../types';
 import { PLAYER, SCREEN } from '../constants';
-import { generateId, clamp } from '../utils';
+import { generateId, clamp, smoothStep } from '../utils';
 
 export function createPlayer(): PlayerEntity {
+  const startX = SCREEN.width / 2;
+  const startY = SCREEN.height - 100;
   return {
     id: generateId(),
     type: 'player',
-    position: { x: SCREEN.width / 2, y: SCREEN.height - 100 },
+    position: { x: startX, y: startY },
     velocity: { x: 0, y: 0 },
     active: true,
     health: PLAYER.maxHealth,
@@ -24,6 +26,15 @@ export function createPlayer(): PlayerEntity {
     invulnerable: false,
     invulnerableTimer: 0,
     thrustLevel: 1,
+    speedBoost: false,
+    speedBoostTimer: 0,
+    homingActive: false,
+    homingTimer: 0,
+    magnetActive: false,
+    magnetTimer: 0,
+    visualAngle: 0,
+    smoothX: startX,
+    smoothY: startY,
   };
 }
 
@@ -34,17 +45,20 @@ export function movePlayer(
 ): void {
   const { player } = state;
   const dt = state.deltaTime / 1000;
-  const speed = PLAYER.speed;
+  const speed = player.speedBoost ? PLAYER.speedBoostSpeed : PLAYER.speed;
 
   const dx = targetX - player.position.x;
   const dy = targetY - player.position.y;
   const dist = Math.sqrt(dx * dx + dy * dy);
 
-  if (dist > 2) {
+  if (dist > 1) {
     const moveSpeed = Math.min(speed * dt, dist);
     player.position.x += (dx / dist) * moveSpeed;
     player.position.y += (dy / dist) * moveSpeed;
   }
+
+  const targetAngle = clamp(dx * 0.02, -0.25, 0.25);
+  player.visualAngle = smoothStep(player.visualAngle, targetAngle, Math.min(dt * 8, 1));
 
   const halfW = player.width / 2;
   const halfH = player.height / 2;
@@ -77,6 +91,27 @@ export function movePlayer(
     player.multiShotTimer -= state.deltaTime;
     if (player.multiShotTimer <= 0) {
       player.multiShot = false;
+    }
+  }
+
+  if (player.speedBoost) {
+    player.speedBoostTimer -= state.deltaTime;
+    if (player.speedBoostTimer <= 0) {
+      player.speedBoost = false;
+    }
+  }
+
+  if (player.homingActive) {
+    player.homingTimer -= state.deltaTime;
+    if (player.homingTimer <= 0) {
+      player.homingActive = false;
+    }
+  }
+
+  if (player.magnetActive) {
+    player.magnetTimer -= state.deltaTime;
+    if (player.magnetTimer <= 0) {
+      player.magnetActive = false;
     }
   }
 

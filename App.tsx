@@ -3,7 +3,9 @@ import { StatusBar } from 'expo-status-bar';
 import { GameScreen } from './src/screens/GameScreen';
 import { MenuScreen } from './src/screens/MenuScreen';
 import { GameOverScreen } from './src/screens/GameOverScreen';
-import { GameScreen as GameScreenType, SavedGameState } from './src/types';
+import { SettingsScreen } from './src/screens/SettingsScreen';
+import { GameScreenType, SavedGameState, GameSettings } from './src/types';
+import { DEFAULT_SETTINGS } from './src/constants';
 import { initAds, showAppOpenAd } from './src/ads/AdService';
 
 export default function App() {
@@ -13,6 +15,7 @@ export default function App() {
   const [highScore, setHighScore] = useState(0);
   const [isNewHighScore, setIsNewHighScore] = useState(false);
   const [savedGameState, setSavedGameState] = useState<SavedGameState | null>(null);
+  const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
   const appOpenShownRef = useRef(false);
 
   useEffect(() => {
@@ -61,17 +64,30 @@ export default function App() {
     setScreen('playing');
   }, []);
 
+  const handleSettings = useCallback(() => {
+    setScreen('settings');
+  }, []);
+
+  const handleSettingsBack = useCallback(() => {
+    setScreen('menu');
+  }, []);
+
+  const handleSettingsChange = useCallback((newSettings: GameSettings) => {
+    setSettings(newSettings);
+  }, []);
+
   return (
     <>
       <StatusBar style="light" />
       {screen === 'menu' && (
-        <MenuScreen onPlay={handlePlay} highScore={highScore} />
+        <MenuScreen onPlay={handlePlay} onSettings={handleSettings} highScore={highScore} />
       )}
       {screen === 'playing' && (
         <GameScreen
           onGameOver={handleGameOver}
           onBack={handleBack}
           savedState={savedGameState}
+          settings={settings}
         />
       )}
       {screen === 'gameOver' && (
@@ -84,6 +100,13 @@ export default function App() {
           onContinue={handleContinue}
           onRestart={handleRestart}
           onMenu={handleBack}
+        />
+      )}
+      {screen === 'settings' && (
+        <SettingsScreen
+          settings={settings}
+          onSettingsChange={handleSettingsChange}
+          onBack={handleSettingsBack}
         />
       )}
     </>

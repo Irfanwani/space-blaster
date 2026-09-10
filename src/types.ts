@@ -34,6 +34,15 @@ export interface PlayerEntity extends Entity {
   invulnerable: boolean;
   invulnerableTimer: number;
   thrustLevel: number;
+  speedBoost: boolean;
+  speedBoostTimer: number;
+  homingActive: boolean;
+  homingTimer: number;
+  magnetActive: boolean;
+  magnetTimer: number;
+  visualAngle: number;
+  smoothX: number;
+  smoothY: number;
 }
 
 export type EnemyType = 'scout' | 'fighter' | 'bomber' | 'boss';
@@ -51,6 +60,7 @@ export interface EnemyEntity extends Entity {
   movePattern: 'straight' | 'zigzag' | 'swoop';
   patternTimer: number;
   patternPhase: number;
+  visualAngle: number;
 }
 
 export interface BulletEntity extends Entity {
@@ -61,6 +71,8 @@ export interface BulletEntity extends Entity {
   isEnemy: boolean;
   color: string;
   trail: boolean;
+  homing: boolean;
+  trailPositions: Vec2[];
 }
 
 export interface ParticleEntity extends Entity {
@@ -72,7 +84,16 @@ export interface ParticleEntity extends Entity {
   decay: number;
 }
 
-export type PowerUpType = 'shield' | 'rapidFire' | 'multiShot' | 'health' | 'score';
+export type PowerUpType =
+  | 'shield'
+  | 'rapidFire'
+  | 'multiShot'
+  | 'health'
+  | 'score'
+  | 'homing'
+  | 'speedBoost'
+  | 'bomb'
+  | 'magnet';
 
 export interface PowerUpEntity extends Entity {
   type: 'powerup';
@@ -81,6 +102,7 @@ export interface PowerUpEntity extends Entity {
   height: number;
   lifetime: number;
   bobPhase: number;
+  glowIntensity: number;
 }
 
 export interface Star {
@@ -89,6 +111,30 @@ export interface Star {
   size: number;
   speed: number;
   brightness: number;
+  layer: number;
+  twinklePhase: number;
+}
+
+export interface Nebula {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  color: string;
+  speed: number;
+  opacity: number;
+  rotation: number;
+}
+
+export interface GameSettings {
+  starCount: number;
+  particleQuality: 'low' | 'medium' | 'high';
+  screenShake: boolean;
+  showFPS: boolean;
+  difficulty: 'easy' | 'normal' | 'hard';
+  autoFire: boolean;
+  vibration: boolean;
+  visualEffects: 'low' | 'medium' | 'high';
 }
 
 export interface GameState {
@@ -98,6 +144,7 @@ export interface GameState {
   particles: ParticleEntity[];
   powerUps: PowerUpEntity[];
   stars: Star[];
+  nebulae: Nebula[];
   score: number;
   highScore: number;
   wave: number;
@@ -114,9 +161,13 @@ export interface GameState {
   totalEnemiesKilled: number;
   bossActive: boolean;
   difficultyMultiplier: number;
+  settings: GameSettings;
+  fps: number;
+  fpsTimer: number;
+  fpsCount: number;
 }
 
-export type GameScreen = 'menu' | 'playing' | 'gameOver';
+export type GameScreenType = 'menu' | 'playing' | 'gameOver' | 'settings';
 
 export interface SavedGameState {
   score: number;
@@ -127,6 +178,9 @@ export interface SavedGameState {
   shieldActive: boolean;
   rapidFire: boolean;
   multiShot: boolean;
+  speedBoost: boolean;
+  homingActive: boolean;
+  magnetActive: boolean;
   comboCount: number;
   totalEnemiesKilled: number;
 }

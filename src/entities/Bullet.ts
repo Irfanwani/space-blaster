@@ -1,6 +1,8 @@
 import { BulletEntity, GameState, Vec2 } from '../types';
 import { BULLET, SCREEN } from '../constants';
-import { generateId, normalize } from '../utils';
+import { generateId, normalize, findNearestEnemy, angleBetween, lerpAngle } from '../utils';
+
+const MAX_TRAIL = 5;
 
 export function createPlayerBullet(
   state: GameState,
@@ -9,6 +11,7 @@ export function createPlayerBullet(
   multiShot: boolean = false
 ): BulletEntity[] {
   const bullets: BulletEntity[] = [];
+  const isHoming = state.player.homingActive;
 
   const dir = normalize(direction);
   bullets.push({
@@ -21,8 +24,10 @@ export function createPlayerBullet(
     width: BULLET.width,
     height: BULLET.height,
     isEnemy: false,
-    color: state.player.rapidFire ? '#ffab00' : BULLET.color,
+    color: state.player.rapidFire ? '#ffab00' : isHoming ? '#448aff' : BULLET.color,
     trail: true,
+    homing: isHoming,
+    trailPositions: [],
   });
 
   if (multiShot) {
@@ -42,6 +47,8 @@ export function createPlayerBullet(
       isEnemy: false,
       color: '#e040fb',
       trail: true,
+      homing: isHoming,
+      trailPositions: [],
     });
     bullets.push({
       id: generateId(),
@@ -58,6 +65,8 @@ export function createPlayerBullet(
       isEnemy: false,
       color: '#e040fb',
       trail: true,
+      homing: isHoming,
+      trailPositions: [],
     });
   }
 
@@ -85,6 +94,8 @@ export function createEnemyBullet(
     isEnemy: true,
     color: isBoss ? '#e040fb' : BULLET.enemyColor,
     trail: false,
+    homing: false,
+    trailPositions: [],
   };
 }
 
@@ -94,6 +105,29 @@ export function updateBullets(state: GameState): void {
 
   for (const bullet of state.bullets) {
     if (!bullet.active) continue;
+
+    if (bullet.homing && !bullet.isEnemy) {
+      const target = findNearestEnemy(bullet.position, state.enemies);
+      if (target) {
+        const targetAngle = angleBetween(bullet.position, target.position);
+        const currentAngle = Math.atan2(bullet.velocity.y, bullet.velocity.x);
+        const newAngle = lerpAngle(currentAngle, targetAngle, Math.min(dt * 5, 1));
+        const speed = Math.sqrt(
+          bullet.velocity.x * bullet.velocity.x + bullet.velocity.y * bullet.velocity.y
+        );
+        bullet.velocity.x = Math.cos(newAngle) * speed;
+        bullet.velocity.y = Math.sin(newAngle) * speed;
+      }
+    }
+
+    if (bullet.trail && bullet.trailPositions.length > 0) {
+      bullet.trailPositions.unshift({ ...bullet.position });
+      if (bullet.trailPositions.length > MAX_TRAIL) {
+        bullet.trailPositions.pop();
+      }
+    } else if (bullet.trail) {
+      bullet.trailPositions = [{ ...bullet.position }];
+    }
 
     bullet.position.x += bullet.velocity.x * dt;
     bullet.position.y += bullet.velocity.y * dt;

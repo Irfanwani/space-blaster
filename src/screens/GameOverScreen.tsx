@@ -2,8 +2,8 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, ActivityIndicator } from 'react-native';
 import { COLORS } from '../constants';
 import { SavedGameState } from '../types';
-import { initStars, updateStars, StarField } from '../rendering/StarField';
-import { Star } from '../types';
+import { initStars, updateStars, initNebulae, updateNebulae, StarField } from '../rendering/StarField';
+import { Star, Nebula } from '../types';
 import { showRewardedAd, preloadRewarded } from '../ads/AdService';
 
 interface GameOverScreenProps {
@@ -27,7 +27,8 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
   onRestart,
   onMenu,
 }) => {
-  const starsRef = useRef<Star[]>(initStars(40));
+  const starsRef = useRef<Star[]>(initStars(45));
+  const nebulaeRef = useRef<Nebula[]>(initNebulae(3));
   const [tick, setTick] = useState(0);
   const [adLoading, setAdLoading] = useState(false);
   const [adReady, setAdReady] = useState(false);
@@ -59,6 +60,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
     let frame: number;
     const animate = () => {
       updateStars(starsRef.current, 1 / 60);
+      updateNebulae(nebulaeRef.current, 1 / 60);
       setTick((t) => t + 1);
       frame = requestAnimationFrame(animate);
     };
@@ -77,7 +79,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
 
   return (
     <View style={[styles.container, { backgroundColor: COLORS.background }]}>
-      <StarField stars={starsRef.current} />
+      <StarField stars={starsRef.current} nebulae={nebulaeRef.current} />
 
       <Animated.View
         style={[

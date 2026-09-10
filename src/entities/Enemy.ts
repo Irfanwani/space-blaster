@@ -2,9 +2,13 @@ import { EnemyEntity, EnemyType, GameState, Vec2 } from '../types';
 import { ENEMIES, SCREEN, WAVE } from '../constants';
 import { generateId, randomRange, randomInt } from '../utils';
 
-export function createEnemy(type: EnemyType, wave: number): EnemyEntity {
+export function createEnemy(
+  type: EnemyType,
+  wave: number,
+  difficultyMultiplier: number = 1
+): EnemyEntity {
   const config = ENEMIES[type];
-  const difficulty = 1 + wave * WAVE.difficultyScale;
+  const difficulty = (1 + wave * WAVE.difficultyScale) * difficultyMultiplier;
 
   let x: number;
   let y: number;
@@ -36,6 +40,7 @@ export function createEnemy(type: EnemyType, wave: number): EnemyEntity {
     movePattern: type === 'boss' ? 'zigzag' : patterns[randomInt(0, 2)],
     patternTimer: 0,
     patternPhase: randomRange(0, Math.PI * 2),
+    visualAngle: 0,
   };
 }
 
@@ -47,13 +52,17 @@ export function updateEnemy(enemy: EnemyEntity, state: GameState): void {
   switch (enemy.movePattern) {
     case 'straight':
       enemy.position.y += enemy.velocity.y * dt;
+      enemy.visualAngle *= 0.95;
       break;
 
     case 'zigzag': {
       enemy.position.y += enemy.velocity.y * dt;
       const zigAmplitude = enemy.enemyType === 'boss' ? 120 : 60;
       const zigFreq = enemy.enemyType === 'boss' ? 0.002 : 0.003;
+      const prevX = enemy.position.x;
       enemy.position.x += Math.sin(enemy.patternTimer * zigFreq + enemy.patternPhase) * zigAmplitude * dt;
+      const xDelta = enemy.position.x - prevX;
+      enemy.visualAngle = enemy.visualAngle * 0.9 + (xDelta * 0.03) * 0.1;
       break;
     }
 
@@ -65,6 +74,7 @@ export function updateEnemy(enemy: EnemyEntity, state: GameState): void {
         enemy.position.y += enemy.velocity.y * dt * 0.3;
         const swoopX = Math.sin(swoopPhase * 2) * 200 * dt;
         enemy.position.x += swoopX;
+        enemy.visualAngle = Math.sin(swoopPhase * 2) * 0.15;
       }
       break;
     }
@@ -97,7 +107,7 @@ export function spawnWave(state: GameState): void {
   state.bossActive = WAVE.bossWave(wave);
 
   if (state.bossActive) {
-    state.enemies.push(createEnemy('boss', wave));
+    state.enemies.push(createEnemy('boss', wave, state.difficultyMultiplier));
     return;
   }
 
@@ -108,7 +118,7 @@ export function spawnWave(state: GameState): void {
   for (let i = 0; i < scouts; i++) {
     setTimeout(() => {
       if (!state.gameOver) {
-        state.enemies.push(createEnemy('scout', wave));
+        state.enemies.push(createEnemy('scout', wave, state.difficultyMultiplier));
       }
     }, i * 300);
   }
@@ -116,7 +126,7 @@ export function spawnWave(state: GameState): void {
   for (let i = 0; i < fighters; i++) {
     setTimeout(() => {
       if (!state.gameOver) {
-        state.enemies.push(createEnemy('fighter', wave));
+        state.enemies.push(createEnemy('fighter', wave, state.difficultyMultiplier));
       }
     }, 500 + i * 400);
   }
@@ -124,7 +134,7 @@ export function spawnWave(state: GameState): void {
   for (let i = 0; i < bombers; i++) {
     setTimeout(() => {
       if (!state.gameOver) {
-        state.enemies.push(createEnemy('bomber', wave));
+        state.enemies.push(createEnemy('bomber', wave, state.difficultyMultiplier));
       }
     }, 1000 + i * 600);
   }

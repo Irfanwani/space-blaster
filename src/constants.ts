@@ -1,4 +1,5 @@
 import { Dimensions } from 'react-native';
+import { GameSettings } from './types';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -11,6 +12,7 @@ export const PLAYER = {
   width: 44,
   height: 48,
   speed: 320,
+  speedBoostSpeed: 480,
   fireRate: 200,
   bulletSpeed: 600,
   bulletDamage: 1,
@@ -66,17 +68,23 @@ export const BULLET = {
   enemySpeed: 300,
   color: '#00e5ff',
   enemyColor: '#ff1744',
+  trailLength: 5,
 };
 
 export const POWER_UP = {
-  width: 28,
-  height: 28,
+  width: 30,
+  height: 30,
   speed: 80,
   lifetime: 8000,
   shieldDuration: 5000,
   rapidFireDuration: 6000,
   multiShotDuration: 8000,
-  dropChance: 0.15,
+  homingDuration: 7000,
+  speedBoostDuration: 6000,
+  magnetDuration: 10000,
+  magnetRange: 150,
+  dropChance: 0.18,
+  dropChanceBoss: 1.0,
 };
 
 export const PARTICLES = {
@@ -96,9 +104,12 @@ export const WAVE = {
 };
 
 export const COLORS = {
-  background: '#0a0a1a',
+  background: '#060612',
+  backgroundDeep: '#020208',
   player: '#00e5ff',
   playerGlow: '#00b8d4',
+  playerHighlight: '#80f0ff',
+  playerShadow: '#006680',
   bullet: '#00e5ff',
   enemyBullet: '#ff1744',
   shield: '#00e5ff',
@@ -113,6 +124,34 @@ export const COLORS = {
     multiShot: '#e040fb',
     health: '#00e676',
     score: '#ffd740',
+    homing: '#448aff',
+    speedBoost: '#ffea00',
+    bomb: '#ff5252',
+    magnet: '#ff80ab',
   },
-  stars: ['#ffffff', '#b0bec5', '#78909c', '#90caf9'],
+  stars: ['#ffffff', '#b0bec5', '#78909c', '#90caf9', '#e1bee7'],
+  nebulae: [
+    'rgba(30,10,60,0.12)',
+    'rgba(10,30,60,0.10)',
+    'rgba(60,10,30,0.08)',
+    'rgba(10,50,40,0.10)',
+    'rgba(40,20,60,0.09)',
+  ],
+};
+
+export const DEFAULT_SETTINGS: GameSettings = {
+  starCount: 120,
+  particleQuality: 'high',
+  screenShake: true,
+  showFPS: false,
+  difficulty: 'normal',
+  autoFire: true,
+  vibration: true,
+  visualEffects: 'high',
+};
+
+export const DIFFICULTY_MULTIPLIERS = {
+  easy: 0.7,
+  normal: 1.0,
+  hard: 1.5,
 };
