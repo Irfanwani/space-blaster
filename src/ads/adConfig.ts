@@ -1,17 +1,20 @@
 import { Platform } from 'react-native';
 
-const platform = Platform.OS as 'android' | 'ios';
-const prefix = `EXPO_PUBLIC_ADMOB_${platform.toUpperCase()}`;
-
-function getEnv(id: string): string | undefined {
-  return process.env[`${prefix}_${id}`];
-}
+const IS_ANDROID = Platform.OS === 'android';
 
 export const AD_UNIT_IDS = {
-  appOpen: getEnv('APP_OPEN') ?? '',
-  interstitial: getEnv('INTERSTITIAL') ?? '',
-  rewarded: getEnv('REWARDED') ?? '',
-  banner: getEnv('BANNER') ?? '',
+  appOpen: IS_ANDROID
+    ? process.env.EXPO_PUBLIC_ADMOB_ANDROID_APP_OPEN ?? ''
+    : process.env.EXPO_PUBLIC_ADMOB_IOS_APP_OPEN ?? '',
+  interstitial: IS_ANDROID
+    ? process.env.EXPO_PUBLIC_ADMOB_ANDROID_INTERSTITIAL ?? ''
+    : process.env.EXPO_PUBLIC_ADMOB_IOS_INTERSTITIAL ?? '',
+  rewarded: IS_ANDROID
+    ? process.env.EXPO_PUBLIC_ADMOB_ANDROID_REWARDED ?? ''
+    : process.env.EXPO_PUBLIC_ADMOB_IOS_REWARDED ?? '',
+  banner: IS_ANDROID
+    ? process.env.EXPO_PUBLIC_ADMOB_ANDROID_BANNER ?? ''
+    : process.env.EXPO_PUBLIC_ADMOB_IOS_BANNER ?? '',
 };
 
 export const AD_CONFIG = {
@@ -20,3 +23,7 @@ export const AD_CONFIG = {
   appOpenDelayMs: 2000,
   rewardedContinueEnabled: true,
 };
+
+export function isValidAdUnitId(id: string): boolean {
+  return typeof id === 'string' && /^ca-app-pub-\d+\/\d+$/.test(id.trim());
+}

@@ -6,12 +6,13 @@ import mobileAds, {
   RewardedAdEventType,
   BannerAdSize,
 } from 'react-native-google-mobile-ads';
-import { AD_UNIT_IDS, AD_CONFIG } from './adConfig';
+import { AD_UNIT_IDS, AD_CONFIG, isValidAdUnitId } from './adConfig';
 
 function getAdUnitId(type: 'appOpen' | 'interstitial' | 'rewarded' | 'banner'): string {
   const id = AD_UNIT_IDS[type];
-  if (!id) {
-    console.warn(`[Ads] Missing ad unit ID for "${type}" — check your .env file`);
+  if (!isValidAdUnitId(id)) {
+    console.warn(`[Ads] Missing/invalid ad unit ID for "${type}" — check your .env file`);
+    return '';
   }
   return id;
 }
@@ -34,8 +35,11 @@ export async function initAds(): Promise<void> {
 
 export function preloadAppOpenAd(): void {
   try {
-    appOpenAd = AppOpenAd.createForAdRequest(getAdUnitId('appOpen'));
-    appOpenAd.load();
+    const id = getAdUnitId('appOpen');
+    if (isValidAdUnitId(id)) {
+      appOpenAd = AppOpenAd.createForAdRequest(id);
+      appOpenAd.load();
+    }
   } catch (e) {
     console.warn('[Ads] App open preload failed:', e);
   }
@@ -43,7 +47,7 @@ export function preloadAppOpenAd(): void {
 
 export function showAppOpenAd(): Promise<boolean> {
   return new Promise((resolve) => {
-    if (!appOpenAd) {
+    if (!appOpenAd || !isValidAdUnitId(getAdUnitId('appOpen'))) {
       resolve(false);
       return;
     }
@@ -72,8 +76,11 @@ export function showAppOpenAd(): Promise<boolean> {
 
 export function preloadInterstitial(): void {
   try {
-    interstitialAd = InterstitialAd.createForAdRequest(getAdUnitId('interstitial'));
-    interstitialAd.load();
+    const id = getAdUnitId('interstitial');
+    if (isValidAdUnitId(id)) {
+      interstitialAd = InterstitialAd.createForAdRequest(id);
+      interstitialAd.load();
+    }
   } catch (e) {
     console.warn('[Ads] Interstitial preload failed:', e);
   }
@@ -81,7 +88,7 @@ export function preloadInterstitial(): void {
 
 export function showInterstitialAd(): Promise<boolean> {
   return new Promise((resolve) => {
-    if (!interstitialAd) {
+    if (!interstitialAd || !isValidAdUnitId(getAdUnitId('interstitial'))) {
       resolve(false);
       preloadInterstitial();
       return;
@@ -111,8 +118,11 @@ export function showInterstitialAd(): Promise<boolean> {
 
 export function preloadRewarded(): void {
   try {
-    rewardedAd = RewardedAd.createForAdRequest(getAdUnitId('rewarded'));
-    rewardedAd.load();
+    const id = getAdUnitId('rewarded');
+    if (isValidAdUnitId(id)) {
+      rewardedAd = RewardedAd.createForAdRequest(id);
+      rewardedAd.load();
+    }
   } catch (e) {
     console.warn('[Ads] Rewarded preload failed:', e);
   }
@@ -120,7 +130,7 @@ export function preloadRewarded(): void {
 
 export function showRewardedAd(): Promise<boolean> {
   return new Promise((resolve) => {
-    if (!rewardedAd) {
+    if (!rewardedAd || !isValidAdUnitId(getAdUnitId('rewarded'))) {
       resolve(false);
       preloadRewarded();
       return;

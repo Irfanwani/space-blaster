@@ -5,6 +5,7 @@ import { initStars, updateStars, StarField } from '../rendering/StarField';
 import { Star } from '../types';
 import { BannerAd, BannerAdSize, useForeground } from 'react-native-google-mobile-ads';
 import { AD_UNIT_IDS } from '../ads/adConfig';
+import { isValidAdUnitId } from '../ads/adConfig';
 
 const logoImage = require('../../assets/icon.png');
 
@@ -113,14 +114,14 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({ onPlay, highScore }) => 
       </Animated.View>
 
       <View style={styles.bannerContainer}>
-        <BannerAd
-          ref={bannerRef}
-          unitId={BANNER_UNIT_ID}
-          size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
-        />
+        {isValidAdUnitId(BANNER_UNIT_ID) ? (
+          <BannerAd
+            ref={bannerRef}
+            unitId={BANNER_UNIT_ID}
+            size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+          />
+        ) : null}
       </View>
-
-      <Text style={styles.version}>v1.0.0</Text>
     </View>
   );
 };
