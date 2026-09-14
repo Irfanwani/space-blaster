@@ -82,6 +82,7 @@ export interface ParticleEntity extends Entity {
   color: string;
   size: number;
   decay: number;
+  isShockwave?: boolean;
 }
 
 export type PowerUpType =
@@ -135,6 +136,7 @@ export interface GameSettings {
   autoFire: boolean;
   vibration: boolean;
   visualEffects: 'low' | 'medium' | 'high';
+  soundEffects: boolean;
 }
 
 export interface GameState {

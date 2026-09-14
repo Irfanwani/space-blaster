@@ -22,6 +22,8 @@ import {
   createExplosion,
   createThrusterParticle,
   createHitSpark,
+  createMuzzleFlash,
+  createShockwaveRing,
   updateParticles,
 } from '../entities/Particle';
 import {
@@ -37,8 +39,11 @@ import { BulletView } from '../rendering/BulletView';
 import { ParticleView } from '../rendering/ParticleView';
 import { PowerUpView } from '../rendering/PowerUpView';
 import { HUD } from '../rendering/HUD';
+import { VignetteOverlay } from '../rendering/VignetteOverlay';
 import { checkCollisions } from '../game/collision';
 import { shouldShowInterstitial, showInterstitialAd } from '../ads/AdService';
+import { playSound } from '../audio/SoundManager';
+import { SettingsScreen } from './SettingsScreen';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -47,6 +52,7 @@ interface GameScreenProps {
   onBack: () => void;
   savedState: SavedGameState | null;
   settings: GameSettings;
+  onUpdateSettings: (settings: GameSettings) => void;
 }
 
 function createInitialState(saved?: SavedGameState | null, settings?: GameSettings): GameState {
@@ -127,11 +133,14 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   onBack,
   savedState,
   settings,
+  onUpdateSettings,
 }) => {
   const [, forceRender] = useState(0);
   const stateRef = useRef<GameState>(createInitialState(savedState, settings));
   const pausedRef = useRef(false);
+  const [showPauseSettings, setShowPauseSettings] = useState(false);
   const targetRef = useRef({ x: SCREEN_WIDTH / 2, y: SCREEN_HEIGHT - 100 });
+  const firingRef = useRef(false);
   const lastTimeRef = useRef(performance.now());
   const thrusterTimerRef = useRef(0);
   const autoFireTimerRef = useRef(0);
@@ -143,6 +152,55 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     pausedRef.current = value;
     forceRender((n) => n + 1);
   }, []);
+
+  const fireRateFor = (settings: GameSettings) =>
+    stateRef.current.player.rapidFire ? 80 : stateRef.current.player.fireRate;
+
+  const firePlayerWeapon = (state: GameState) => {
+    const muzzleY = state.player.position.y - state.player.height / 2;
+    const newBullets = createPlayerBullet(
+      state,
+      {
+        x: state.player.position.x,
+        y: muzzleY,
+      },
+      { x: 0, y: -1 },
+      state.player.multiShot
+    );
+    state.bullets.push(...newBullets);
+    playSound('laser', 70);
+
+    const effectMult =
+      state.settings.visualEffects === 'low'
+        ? 0
+        : state.settings.visualEffects === 'medium'
+        ? 1
+        : 1.5;
+
+    if (effectMult > 0) {
+      const gunOffsetX = state.player.width * 0.28;
+      state.particles.push(
+        ...createMuzzleFlash(
+          { x: state.player.position.x + gunOffsetX, y: muzzleY },
+          state.player.multiShot ? 4 : 3
+        )
+      );
+      state.particles.push(
+        ...createMuzzleFlash(
+          { x: state.player.position.x - gunOffsetX, y: muzzleY },
+          state.player.multiShot ? 4 : 3
+        )
+      );
+      state.particles.push(
+        createShockwaveRing(
+          { x: state.player.position.x, y: muzzleY + 2 },
+          state.player.speedBoost ? '#ffd600' : '#7df9ff',
+          34 * effectMult,
+          240
+        )
+      );
+    }
+  };
 
   const gameLoop = useCallback(() => {
     const state = stateRef.current;
@@ -188,6 +246,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
       state.wave++;
       state.waveTimer = 0;
       spawnWave(state);
+      playSound(state.bossActive ? 'bossWave' : 'waveStart');
 
       if (
         shouldShowInterstitial(state.wave) &&
@@ -212,6 +271,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
         state.bullets.push(
           createEnemyBullet(enemy.position, dir, enemy.enemyType === 'boss')
         );
+        playSound('enemyLaser', 40);
 
         if (enemy.enemyType === 'boss') {
           state.bullets.push(
@@ -226,19 +286,15 @@ export const GameScreen: React.FC<GameScreenProps> = ({
 
     if (state.settings.autoFire) {
       autoFireTimerRef.current += dt;
-      const fireRate = state.player.rapidFire ? 80 : state.player.fireRate;
-      if (autoFireTimerRef.current >= fireRate) {
+      if (autoFireTimerRef.current >= fireRateFor(state.settings)) {
         autoFireTimerRef.current = 0;
-        const newBullets = createPlayerBullet(
-          state,
-          {
-            x: state.player.position.x,
-            y: state.player.position.y - state.player.height / 2,
-          },
-          { x: 0, y: -1 },
-          state.player.multiShot
-        );
-        state.bullets.push(...newBullets);
+        firePlayerWeapon(state);
+      }
+    } else if (firingRef.current) {
+      autoFireTimerRef.current += dt;
+      if (autoFireTimerRef.current >= fireRateFor(state.settings)) {
+        autoFireTimerRef.current = 0;
+        firePlayerWeapon(state);
       }
     }
 
@@ -283,6 +339,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           if (collisions.enemyHits.has(enemy.id) && enemy.active) {
             enemy.health -= bullet.damage;
             state.particles.push(...createHitSpark(bullet.position));
+            playSound('hit', 30);
 
             if (enemy.health <= 0) {
               enemy.active = false;
@@ -308,6 +365,10 @@ export const GameScreen: React.FC<GameScreenProps> = ({
                     : Math.floor(12 * particleMult)
                 )
               );
+              playSound(
+                enemy.enemyType === 'boss' ? 'bigExplosion' : 'explosion',
+                20
+              );
               state.screenShakeIntensity =
                 enemy.enemyType === 'boss' ? 15 : 5;
 
@@ -323,6 +384,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
 
     if (collisions.playerHit) {
       const dead = damagePlayer(state, 1);
+      playSound('playerHit');
       if (state.settings.vibration) {
         Vibration.vibrate(80);
       }
@@ -334,6 +396,8 @@ export const GameScreen: React.FC<GameScreenProps> = ({
             '#ffffff',
           ])
         );
+        playSound('bigExplosion');
+        playSound('gameOver');
         state.gameOver = true;
         if (!gameOverCalledRef.current) {
           gameOverCalledRef.current = true;
@@ -351,6 +415,9 @@ export const GameScreen: React.FC<GameScreenProps> = ({
         state.particles.push(
           ...createExplosion(pu.position, 8, [COLORS.powerUp[pu.powerUpType]])
         );
+        playSound(
+          pu.powerUpType === 'shield' ? 'shield' : 'powerUpCollect'
+        );
 
         if (pu.powerUpType === 'bomb') {
           for (const enemy of state.enemies) {
@@ -362,6 +429,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
               )
             );
           }
+          playSound('bigExplosion');
           state.screenShakeIntensity = 20;
         }
 
@@ -399,22 +467,25 @@ export const GameScreen: React.FC<GameScreenProps> = ({
       onPanResponderGrant: (evt) => {
         const { pageX, pageY } = evt.nativeEvent;
         targetRef.current = { x: pageX, y: pageY };
+        firingRef.current = true;
       },
       onPanResponderMove: (evt) => {
         const { pageX, pageY } = evt.nativeEvent;
         targetRef.current = { x: pageX, y: pageY };
       },
-      onPanResponderRelease: () => {},
+      onPanResponderRelease: () => {
+        firingRef.current = false;
+      },
+      onPanResponderTerminate: () => {
+        firingRef.current = false;
+      },
     })
   ).current;
 
   const state = stateRef.current;
 
   return (
-    <View
-      style={[styles.container, { backgroundColor: COLORS.background }]}
-      {...panResponder.panHandlers}
-    >
+    <View style={[styles.container, { backgroundColor: COLORS.background }]}>
       <View
         style={{
           transform: [
@@ -423,7 +494,22 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           ],
         }}
       >
-        <StarField stars={state.stars} nebulae={state.nebulae} />
+        <View
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            width: SCREEN_WIDTH,
+            height: SCREEN_HEIGHT,
+            transform: [
+              { scale: 1.12 },
+              { translateX: -state.player.velocity.x * 0.045 },
+              { translateY: -state.player.velocity.y * 0.045 },
+            ],
+          }}
+        >
+          <StarField stars={state.stars} nebulae={state.nebulae} />
+        </View>
 
         {state.player.active && <PlayerShip player={state.player} />}
 
@@ -444,6 +530,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
         ))}
       </View>
 
+      <VignetteOverlay />
       <HUD state={state} />
 
       {state.waveTimer < 2000 && state.wave > 0 && (
@@ -457,28 +544,49 @@ export const GameScreen: React.FC<GameScreenProps> = ({
         </View>
       )}
 
+      <View style={styles.gameSurface} {...panResponder.panHandlers} />
+
       {pausedRef.current && (
         <View style={styles.pauseOverlay}>
           <Text style={styles.pauseText}>PAUSED</Text>
-          <TouchableOpacity
-            style={styles.resumeButton}
-            onPress={() => setPaused(false)}
-          >
-            <Text style={styles.resumeButtonText}>RESUME</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quitButton} onPress={onBack}>
-            <Text style={styles.quitButtonText}>QUIT</Text>
-          </TouchableOpacity>
+          <View style={styles.pauseButtons}>
+            <TouchableOpacity
+              style={styles.resumeButton}
+              onPress={() => setPaused(false)}
+            >
+              <Text style={styles.resumeButtonText}>RESUME</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.settingsButton}
+              onPress={() => { playSound('select'); setShowPauseSettings(true); }}
+            >
+              <Text style={styles.settingsButtonText}>SETTINGS</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.quitButton} onPress={onBack}>
+              <Text style={styles.quitButtonText}>QUIT</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
 
       {!pausedRef.current && !state.gameOver && (
         <TouchableOpacity
           style={styles.pauseBtn}
+          hitSlop={{ top: 10, bottom: 10, left: 14, right: 14 }}
           onPress={() => setPaused(true)}
         >
           <Text style={styles.pauseBtnText}>| |</Text>
         </TouchableOpacity>
+      )}
+
+      {pausedRef.current && showPauseSettings && (
+        <View style={styles.pauseSettingsOverlay}>
+          <SettingsScreen
+            settings={settings}
+            onSettingsChange={onUpdateSettings}
+            onBack={() => setShowPauseSettings(false)}
+          />
+        </View>
       )}
     </View>
   );
@@ -487,6 +595,13 @@ export const GameScreen: React.FC<GameScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  gameSurface: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   waveAnnounce: {
     position: 'absolute',
@@ -525,8 +640,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     letterSpacing: 8,
   },
-  resumeButton: {
+  pauseButtons: {
     marginTop: 40,
+    alignItems: 'center',
+  },
+  resumeButton: {
     paddingVertical: 12,
     paddingHorizontal: 40,
     backgroundColor: COLORS.player,
@@ -534,6 +652,21 @@ const styles = StyleSheet.create({
   },
   resumeButtonText: {
     color: '#000',
+    fontSize: 16,
+    fontWeight: 'bold',
+    letterSpacing: 2,
+  },
+  settingsButton: {
+    marginTop: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 40,
+    borderWidth: 1,
+    borderColor: COLORS.player,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0,229,255,0.12)',
+  },
+  settingsButtonText: {
+    color: COLORS.player,
     fontSize: 16,
     fontWeight: 'bold',
     letterSpacing: 2,
@@ -567,5 +700,13 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  pauseSettingsOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    elevation: 12,
   },
 });

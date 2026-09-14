@@ -47,6 +47,8 @@ export function createExplosion(
     });
   }
 
+  particles.push(createShockwaveRing(position, palette[0], randomRange(50, 65), 350));
+
   return particles;
 }
 
@@ -99,6 +101,72 @@ export function createHitSpark(position: Vec2, count: number = 5): ParticleEntit
   }
 
   return particles;
+}
+
+export function createMuzzleFlash(
+  position: Vec2,
+  count: number = 3,
+  colors?: string[]
+): ParticleEntity[] {
+  const palette = colors || ['#ffffff', '#7df9ff', '#00e5ff'];
+  const particles: ParticleEntity[] = [];
+
+  for (let i = 0; i < count; i++) {
+    const angle = -Math.PI / 2 + randomRange(-0.35, 0.35);
+    const speed = randomRange(150, 300);
+
+    particles.push({
+      id: generateId(),
+      type: 'particle',
+      position: { x: position.x, y: position.y },
+      velocity: {
+        x: Math.cos(angle) * speed,
+        y: Math.sin(angle) * speed,
+      },
+      active: true,
+      lifetime: randomRange(80, 150),
+      maxLifetime: 150,
+      color: randomColor(palette),
+      size: randomRange(1.5, 3.5),
+      decay: 2.5,
+    });
+  }
+
+  particles.push({
+    id: generateId(),
+    type: 'particle',
+    position: { x: position.x, y: position.y },
+    velocity: { x: randomRange(-10, 10), y: randomRange(-10, -30) },
+    active: true,
+    lifetime: 100,
+    maxLifetime: 100,
+    color: '#ffffff',
+    size: randomRange(10, 16),
+    decay: 3,
+  });
+
+  return particles;
+}
+
+export function createShockwaveRing(
+  position: Vec2,
+  color: string = '#7df9ff',
+  maxRadius: number = 40,
+  lifetime: number = 300
+): ParticleEntity {
+  return {
+    id: generateId(),
+    type: 'particle',
+    position: { x: position.x, y: position.y },
+    velocity: { x: 0, y: 0 },
+    active: true,
+    lifetime,
+    maxLifetime: lifetime,
+    color,
+    size: maxRadius,
+    decay: 1,
+    isShockwave: true,
+  };
 }
 
 export function updateParticles(state: GameState): void {

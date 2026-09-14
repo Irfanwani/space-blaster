@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Star, Nebula } from '../types';
 import { SCREEN, COLORS } from '../constants';
 import { randomRange } from '../utils';
@@ -91,44 +92,35 @@ export const StarField: React.FC<StarFieldProps> = ({ stars, nebulae }) => {
   }, [stars]);
 
   return (
-    <View
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: SCREEN.width,
-        height: SCREEN.height,
-        backgroundColor: COLORS.backgroundDeep,
-      }}
-    >
-      <View
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: COLORS.background,
-          opacity: 0.7,
-        }}
+    <View style={styles.container}>
+      <LinearGradient
+        colors={['#03030c', COLORS.backgroundDeep, '#0a0a24']}
+        locations={[0, 0.55, 1]}
+        style={StyleSheet.absoluteFill}
       />
 
-      {nebulae.map((nebula, i) => (
-        <View
-          key={`neb-${i}`}
-          style={{
-            position: 'absolute',
-            left: nebula.x - nebula.width / 2,
-            top: nebula.y - nebula.height / 2,
-            width: nebula.width,
-            height: nebula.height,
-            borderRadius: nebula.width / 2,
-            backgroundColor: nebula.color,
-            opacity: nebula.opacity,
-            transform: [{ rotate: `${nebula.rotation}deg` }],
-          }}
-        />
-      ))}
+      {nebulae.map((nebula, i) => {
+        const core = nebula.color.replace(/[\d.]+\)$/, '0.22)');
+        return (
+          <LinearGradient
+            key={`neb-${i}`}
+            colors={[core, nebula.color, 'transparent']}
+            locations={[0, 0.5, 1]}
+            start={{ x: 0.5, y: 0.5 }}
+            end={{ x: 1, y: 1 }}
+            style={{
+              position: 'absolute',
+              left: nebula.x - nebula.width / 2,
+              top: nebula.y - nebula.height / 2,
+              width: nebula.width,
+              height: nebula.height,
+              borderRadius: nebula.width / 2,
+              opacity: nebula.opacity,
+              transform: [{ rotate: `${nebula.rotation}deg` }],
+            }}
+          />
+        );
+      })}
 
       {sortedStars.map((star, i) => {
         const twinkle =
@@ -144,21 +136,28 @@ export const StarField: React.FC<StarFieldProps> = ({ stars, nebulae }) => {
             ? COLORS.stars[(i + 1) % COLORS.stars.length]
             : '#ffffff';
 
+        const isNear = star.layer >= 3;
+        const streak = isNear ? star.size * 2.4 : star.size;
+        const size = isNear ? star.size * 1.25 : star.size;
+
         return (
-          <View
+          <LinearGradient
             key={i}
+            colors={isNear ? [starColor, starColor, hexA(starColor, 0.25)] : [starColor, starColor]}
+            locations={isNear ? [0, 0.45, 1] : [0, 1]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
             style={{
               position: 'absolute',
-              left: star.x - star.size / 2,
-              top: star.y - star.size / 2,
-              width: star.size,
-              height: star.size,
-              borderRadius: star.size / 2,
-              backgroundColor: starColor,
+              left: star.x - size / 2,
+              top: star.y - size / 2,
+              width: size,
+              height: streak,
+              borderRadius: isNear ? 1.5 : size / 2,
               opacity: star.brightness * twinkle,
               shadowColor: starColor,
               shadowOffset: { width: 0, height: 0 },
-              shadowOpacity: star.layer >= 3 ? 0.8 : 0,
+              shadowOpacity: star.layer >= 3 ? 0.9 : 0,
               shadowRadius: star.layer >= 3 ? star.size : 0,
             }}
           />
@@ -167,3 +166,23 @@ export const StarField: React.FC<StarFieldProps> = ({ stars, nebulae }) => {
     </View>
   );
 };
+
+function hexA(color: string, alpha: number): string {
+  if (color.length === 7) {
+    return `${color}${Math.round(alpha * 255)
+      .toString(16)
+      .padStart(2, '0')}`;
+  }
+  return color;
+}
+
+const styles = StyleSheet.create({
+  container: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: SCREEN.width,
+    height: SCREEN.height,
+    backgroundColor: COLORS.backgroundDeep,
+  },
+});

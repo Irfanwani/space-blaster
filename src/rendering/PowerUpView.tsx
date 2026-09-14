@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { PowerUpEntity } from '../types';
 import { COLORS, POWER_UP } from '../constants';
 import { hexToRgba } from '../utils';
@@ -24,6 +25,7 @@ export const PowerUpView: React.FC<PowerUpViewProps> = ({ powerUp }) => {
   const color = COLORS.powerUp[powerUp.powerUpType];
   const pulse = 0.85 + Math.sin(Date.now() * 0.005 + powerUp.bobPhase) * 0.15;
   const glowPulse = 0.6 + Math.sin(Date.now() * 0.004 + powerUp.bobPhase) * 0.4;
+  const spin = (Date.now() * 0.004 + powerUp.bobPhase) % 360;
 
   return (
     <View
@@ -38,20 +40,39 @@ export const PowerUpView: React.FC<PowerUpViewProps> = ({ powerUp }) => {
       <View
         style={{
           position: 'absolute',
-          left: -4,
-          top: -4,
-          width: POWER_UP.width + 8,
-          height: POWER_UP.height + 8,
-          borderRadius: (POWER_UP.width + 8) / 2,
-          backgroundColor: hexToRgba(color, 0.08 * glowPulse),
+          left: -6,
+          top: -6,
+          width: POWER_UP.width + 12,
+          height: POWER_UP.height + 12,
+          borderRadius: (POWER_UP.width + 12) / 2,
+          opacity: glowPulse,
           shadowColor: color,
           shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: 0.4 * glowPulse,
-          shadowRadius: 10,
+          shadowOpacity: 0.8,
+          shadowRadius: 16,
         }}
       />
 
-      <View
+      <LinearGradient
+        colors={['transparent', hexToRgba(color, 0.35 * glowPulse), 'transparent']}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={{
+          position: 'absolute',
+          left: POWER_UP.width / 2 - POWER_UP.width,
+          top: POWER_UP.height / 2 - POWER_UP.height / 2,
+          width: POWER_UP.width * 2,
+          height: POWER_UP.height,
+          borderRadius: POWER_UP.width,
+          opacity: glowPulse,
+        }}
+      />
+
+      <LinearGradient
+        colors={[hexToRgba('#ffffff', 0.55), color, hexToRgba(color, 0.4)]}
+        locations={[0, 0.45, 1]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={{
           position: 'absolute',
           left: 0,
@@ -59,7 +80,6 @@ export const PowerUpView: React.FC<PowerUpViewProps> = ({ powerUp }) => {
           width: POWER_UP.width,
           height: POWER_UP.height,
           borderRadius: POWER_UP.width / 2,
-          backgroundColor: hexToRgba(color, 0.25),
           borderWidth: 2,
           borderColor: color,
           shadowColor: color,
@@ -68,6 +88,7 @@ export const PowerUpView: React.FC<PowerUpViewProps> = ({ powerUp }) => {
           shadowRadius: 8,
           elevation: 8,
           overflow: 'hidden',
+          transform: [{ perspective: 200 }, { rotateY: `${spin * 0.2}deg` }],
         }}
       >
         <View
@@ -78,7 +99,7 @@ export const PowerUpView: React.FC<PowerUpViewProps> = ({ powerUp }) => {
             width: POWER_UP.width * 0.4,
             height: POWER_UP.height * 0.35,
             borderRadius: POWER_UP.width * 0.2,
-            backgroundColor: hexToRgba('#ffffff', 0.25 * pulse),
+            backgroundColor: hexToRgba('#ffffff', 0.3 * pulse),
           }}
         />
 
@@ -90,10 +111,11 @@ export const PowerUpView: React.FC<PowerUpViewProps> = ({ powerUp }) => {
             width: POWER_UP.width * 0.25,
             height: POWER_UP.height * 0.2,
             borderRadius: POWER_UP.width * 0.12,
-            backgroundColor: hexToRgba(color, 0.3),
+            backgroundColor: '#ffffff',
+            opacity: 0.35,
           }}
         />
-      </View>
+      </LinearGradient>
 
       <View
         style={{

@@ -1,10 +1,14 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Animated } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../constants';
 import { SavedGameState } from '../types';
 import { initStars, updateStars, initNebulae, updateNebulae, StarField } from '../rendering/StarField';
 import { Star, Nebula } from '../types';
 import { showRewardedAd, preloadRewarded } from '../ads/AdService';
+import { playSound } from '../audio/SoundManager';
+import { hexToRgba } from '../utils';
+import { GameButton } from '../components/GameButton';
 
 interface GameOverScreenProps {
   score: number;
@@ -87,55 +91,66 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
           { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
         ]}
       >
-        <Text style={styles.gameOverText}>MISSION FAILED</Text>
-        <View style={styles.divider} />
-
-        <View style={styles.statContainer}>
-          <Text style={styles.statLabel}>FINAL SCORE</Text>
-          <Text style={styles.statValue}>{score.toLocaleString()}</Text>
-        </View>
-
-        <View style={styles.statContainer}>
-          <Text style={styles.statLabel}>WAVE REACHED</Text>
-          <Text style={[styles.statValue, { color: COLORS.wave }]}>{wave}</Text>
+        <View style={styles.titleBlock}>
+          <LinearGradient
+            colors={[hexToRgba(COLORS.healthLow, 0.25), 'transparent']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          <Text style={styles.gameOverText}>MISSION FAILED</Text>
+          <Text style={styles.waveReached}>YOU SURVIVED {wave} WAVE{wave !== 1 ? 'S' : ''}</Text>
         </View>
 
         {isNewHighScore && (
           <View style={styles.newHighScore}>
-            <Text style={styles.newHighScoreText}>NEW HIGH SCORE!</Text>
+            <Text style={styles.newHighScoreText}>★ NEW HIGH SCORE ★</Text>
           </View>
         )}
 
+        <View style={styles.scoreCard}>
+          <LinearGradient
+            colors={['rgba(16,24,48,0.85)', 'rgba(8,12,26,0.6)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={[StyleSheet.absoluteFill, { borderRadius: 20 }]}
+          />
+          <Text style={styles.statLabel}>FINAL SCORE</Text>
+          <Text style={styles.statValue}>{score.toLocaleString()}</Text>
+          <View style={styles.scoreFooter}>
+            <Text style={styles.statLabel}>HIGH SCORE</Text>
+            <Text style={styles.highScoreCompare}>{highScore.toLocaleString()}</Text>
+          </View>
+        </View>
+
         {savedGameState && (
-          <TouchableOpacity
-            style={[styles.continueButton, adLoading && styles.continueButtonDisabled]}
-            onPress={handleWatchAd}
-            disabled={adLoading}
-          >
-            {adLoading ? (
-              <View style={styles.continueLoading}>
-                <ActivityIndicator color="#000" size="small" />
-                <Text style={[styles.continueButtonText, { marginLeft: 10 }]}>
-                  LOADING...
-                </Text>
-              </View>
-            ) : (
-              <Text style={styles.continueButtonText}>WATCH AD TO CONTINUE</Text>
-            )}
-            <Text style={styles.continueSubtext}>
-              Resume from wave {savedGameState.wave}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.continueSpacing}>
+            <GameButton
+              label={adLoading ? 'LOADING...' : 'WATCH AD TO CONTINUE'}
+              variant="success"
+              size="lg"
+              subText={`Resume from wave ${savedGameState.wave}`}
+              loading={adLoading}
+              disabled={adLoading}
+              onPress={handleWatchAd}
+            />
+          </View>
         )}
 
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.retryButton} onPress={onRestart}>
-            <Text style={styles.retryButtonText}>RETRY</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuButton} onPress={onMenu}>
-            <Text style={styles.menuButtonText}>MENU</Text>
-          </TouchableOpacity>
+          <GameButton
+            label="RETRY"
+            variant="primary"
+            size="lg"
+            onPress={() => { playSound('select'); onRestart(); }}
+          />
+          <View style={styles.buttonGap} />
+          <GameButton
+            label="MENU"
+            variant="ghost"
+            size="md"
+            onPress={() => { playSound('select'); onMenu(); }}
+          />
         </View>
       </Animated.View>
     </View>
@@ -150,120 +165,104 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  titleBlock: {
+    alignItems: 'center',
+    marginBottom: 32,
+    paddingVertical: 18,
+    paddingHorizontal: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: hexToRgba(COLORS.healthLow, 0.3),
+    overflow: 'hidden',
   },
   gameOverText: {
     color: COLORS.healthLow,
-    fontSize: 36,
-    fontWeight: 'bold',
-    letterSpacing: 4,
+    fontSize: 34,
+    fontWeight: '900',
+    letterSpacing: 5,
     textShadowColor: COLORS.healthLow,
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 12,
+    textShadowRadius: 14,
   },
-  divider: {
-    width: 160,
-    height: 2,
-    backgroundColor: COLORS.healthLow,
-    opacity: 0.4,
-    marginTop: 20,
-    marginBottom: 40,
-  },
-  statContainer: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  statLabel: {
-    color: '#888',
-    fontSize: 12,
-    letterSpacing: 3,
-    fontWeight: '600',
-  },
-  statValue: {
-    color: '#fff',
-    fontSize: 40,
-    fontWeight: 'bold',
-    fontVariant: ['tabular-nums'],
+  waveReached: {
+    color: '#ff8a80',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 2.5,
+    marginTop: 8,
   },
   newHighScore: {
-    marginBottom: 30,
-    paddingVertical: 8,
-    paddingHorizontal: 24,
-    backgroundColor: 'rgba(255,215,64,0.15)',
-    borderRadius: 8,
+    marginBottom: 28,
+    paddingVertical: 10,
+    paddingHorizontal: 28,
+    backgroundColor: 'rgba(255,215,64,0.12)',
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: COLORS.combo,
+    borderColor: hexToRgba(COLORS.combo, 0.7),
+    shadowColor: COLORS.combo,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 14,
   },
   newHighScoreText: {
     color: COLORS.combo,
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 15,
+    fontWeight: '900',
     letterSpacing: 2,
   },
-  continueButton: {
-    marginBottom: 24,
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    backgroundColor: '#00e676',
-    borderRadius: 12,
+  scoreCard: {
+    width: '100%',
+    maxWidth: 320,
     alignItems: 'center',
-    shadowColor: '#00e676',
-    shadowOffset: { width: 0, height: 0 },
+    paddingVertical: 26,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    overflow: 'hidden',
+    marginBottom: 28,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 8,
+    shadowRadius: 16,
+    elevation: 6,
   },
-  continueButtonDisabled: {
-    opacity: 0.7,
-  },
-  continueButtonText: {
-    color: '#000',
-    fontSize: 16,
-    fontWeight: 'bold',
-    letterSpacing: 2,
-  },
-  continueSubtext: {
-    color: '#000',
+  statLabel: {
+    color: '#7a86a8',
     fontSize: 11,
-    opacity: 0.6,
-    marginTop: 4,
+    letterSpacing: 3,
+    fontWeight: '700',
   },
-  continueLoading: {
+  statValue: {
+    color: '#fff',
+    fontSize: 44,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+    marginTop: 4,
+    textShadowColor: hexToRgba(COLORS.player, 0.5),
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 14,
+  },
+  scoreFooter: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'baseline',
+    marginTop: 14,
+    gap: 10,
+  },
+  highScoreCompare: {
+    color: COLORS.combo,
+    fontSize: 16,
+    fontWeight: '800',
+    fontVariant: ['tabular-nums'],
+  },
+  continueSpacing: {
+    marginBottom: 24,
   },
   buttonContainer: {
-    gap: 16,
     alignItems: 'center',
   },
-  retryButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 60,
-    backgroundColor: COLORS.player,
-    borderRadius: 12,
-    shadowColor: COLORS.player,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  retryButtonText: {
-    color: '#000',
-    fontSize: 18,
-    fontWeight: 'bold',
-    letterSpacing: 4,
-  },
-  menuButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 40,
-    borderWidth: 1,
-    borderColor: '#555',
-    borderRadius: 12,
-  },
-  menuButtonText: {
-    color: '#999',
-    fontSize: 16,
-    fontWeight: 'bold',
-    letterSpacing: 3,
+  buttonGap: {
+    height: 16,
   },
 });

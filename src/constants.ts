@@ -148,6 +148,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
   autoFire: true,
   vibration: true,
   visualEffects: 'high',
+  soundEffects: true,
 };
 
 export const DIFFICULTY_MULTIPLIERS = {

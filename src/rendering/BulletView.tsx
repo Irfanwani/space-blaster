@@ -1,6 +1,8 @@
 import React from 'react';
 import { View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { BulletEntity } from '../types';
+import { hexToRgba } from '../utils';
 
 interface BulletViewProps {
   bullet: BulletEntity;
@@ -11,63 +13,57 @@ export const BulletView: React.FC<BulletViewProps> = ({ bullet }) => {
     <>
       {bullet.trail &&
         bullet.trailPositions.map((pos, i) => {
-          const trailOpacity = (i + 1) / (bullet.trailPositions.length + 2) * 0.4;
+          const trailOpacity = (i + 1) / (bullet.trailPositions.length + 2) * 0.45;
           const trailSize = (i + 1) / (bullet.trailPositions.length + 2);
           return (
-            <View
+            <LinearGradient
               key={`trail-${i}`}
+              colors={[bullet.color, hexToRgba(bullet.color, 0.2)]}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
               style={{
                 position: 'absolute',
                 left: pos.x - (bullet.width * trailSize) / 2,
                 top: pos.y - (bullet.height * trailSize * 0.6) / 2,
-                width: bullet.width * trailSize,
+                width: bullet.width * trailSize + 2,
                 height: bullet.height * trailSize * 0.6,
-                backgroundColor: bullet.color,
-                borderRadius: bullet.width * trailSize / 2,
+                borderRadius: (bullet.width * trailSize + 2) / 2,
                 opacity: trailOpacity,
               }}
             />
           );
         })}
 
-      <View
+      <LinearGradient
+        colors={[bullet.color, hexToRgba(bullet.color, 0.1)]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
         style={{
           position: 'absolute',
-          left: bullet.position.x - bullet.width / 2 - 2,
-          top: bullet.position.y - bullet.height / 2 - 2,
-          width: bullet.width + 4,
-          height: bullet.height + 4,
-          borderRadius: (bullet.width + 4) / 2,
-          backgroundColor: bullet.color,
-          opacity: 0.15,
+          left: bullet.position.x - bullet.width / 2 - 3,
+          top: bullet.position.y - bullet.height / 2 - 3,
+          width: bullet.width + 6,
+          height: bullet.height + 6,
+          borderRadius: (bullet.width + 6) / 2,
+          opacity: 0.35,
           shadowColor: bullet.color,
           shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
+          shadowOpacity: 0.8,
+          shadowRadius: 10,
         }}
       />
 
-      <View
+      <LinearGradient
+        colors={['#ffffff', bullet.color, hexToRgba(bullet.color, 0.3)]}
+        locations={[0, 0.7, 1]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
         style={{
           position: 'absolute',
           left: bullet.position.x - bullet.width / 2,
           top: bullet.position.y - bullet.height / 2,
           width: bullet.width,
           height: bullet.height,
-          backgroundColor: '#ffffff',
-          borderRadius: bullet.width / 2,
-          opacity: 0.7,
-        }}
-      />
-
-      <View
-        style={{
-          position: 'absolute',
-          left: bullet.position.x - bullet.width / 2 + 0.5,
-          top: bullet.position.y - bullet.height / 2,
-          width: bullet.width - 1,
-          height: bullet.height,
-          backgroundColor: bullet.color,
           borderRadius: bullet.width / 2,
           shadowColor: bullet.color,
           shadowOffset: { width: 0, height: 0 },
@@ -86,12 +82,12 @@ export const BulletView: React.FC<BulletViewProps> = ({ bullet }) => {
             width: 8,
             height: 8,
             borderRadius: 4,
-            backgroundColor: '#448aff',
-            opacity: 0.3,
+            backgroundColor: hexToRgba('#448aff', 0.4),
+            opacity: 0.5,
             shadowColor: '#448aff',
             shadowOffset: { width: 0, height: 0 },
-            shadowOpacity: 0.8,
-            shadowRadius: 6,
+            shadowOpacity: 0.9,
+            shadowRadius: 7,
           }}
         />
       )}

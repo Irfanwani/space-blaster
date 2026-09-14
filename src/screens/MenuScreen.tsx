@@ -1,11 +1,15 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, Animated, Platform } from 'react-native';
+import { View, Text, StyleSheet, Image, Animated, Platform } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../constants';
 import { initStars, updateStars, initNebulae, updateNebulae, StarField } from '../rendering/StarField';
 import { Star, Nebula } from '../types';
 import { BannerAd, BannerAdSize, useForeground } from 'react-native-google-mobile-ads';
 import { AD_UNIT_IDS } from '../ads/adConfig';
 import { isValidAdUnitId } from '../ads/adConfig';
+import { playSound } from '../audio/SoundManager';
+import { hexToRgba } from '../utils';
+import { GameButton } from '../components/GameButton';
 
 const logoImage = require('../../assets/icon.png');
 
@@ -91,32 +95,57 @@ export const MenuScreen: React.FC<MenuScreenProps> = ({ onPlay, onSettings, high
             },
           ]}
         >
-          <Image source={logoImage} style={styles.logo} resizeMode="contain" />
+          <View style={styles.logoGlow}>
+            <Image source={logoImage} style={styles.logo} resizeMode="contain" />
+          </View>
+          <Text style={styles.title}>SPACE BLASTER</Text>
+          <Text style={styles.subtitle}>DELTA FORCE PROTOCOL</Text>
         </Animated.View>
 
         {highScore > 0 && (
           <View style={styles.highScoreContainer}>
-            <Text style={styles.highScoreLabel}>HIGH SCORE</Text>
-            <Text style={styles.highScoreValue}>{highScore.toLocaleString()}</Text>
+            <LinearGradient
+              colors={['rgba(255,215,64,0.16)', 'rgba(255,215,64,0.04)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.highScoreCard}
+            >
+              <Text style={styles.highScoreLabel}>HIGH SCORE</Text>
+              <Text style={styles.highScoreValue}>{highScore.toLocaleString()}</Text>
+            </LinearGradient>
           </View>
         )}
 
         <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-          <TouchableOpacity style={styles.playButton} onPress={onPlay}>
-            <Text style={styles.playButtonText}>LAUNCH</Text>
-          </TouchableOpacity>
+          <GameButton
+            label="LAUNCH MISSION"
+            variant="primary"
+            size="lg"
+            onPress={() => { playSound('select'); onPlay(); }}
+          />
         </Animated.View>
 
-        <TouchableOpacity style={styles.settingsButton} onPress={onSettings}>
-          <Text style={styles.settingsButtonText}>SETTINGS</Text>
-        </TouchableOpacity>
+        <View style={styles.settingsSpacing}>
+          <GameButton
+            label="SETTINGS"
+            variant="secondary"
+            size="md"
+            onPress={() => { playSound('select'); onSettings(); }}
+          />
+        </View>
 
         <View style={styles.instructions}>
-          <Text style={styles.instructionText}>DRAG TO MOVE</Text>
-          <Text style={styles.instructionDot}>•</Text>
-          <Text style={styles.instructionText}>AUTO FIRE</Text>
-          <Text style={styles.instructionDot}>•</Text>
-          <Text style={styles.instructionText}>COLLECT POWER-UPS</Text>
+          <View style={styles.instructionPill}>
+            <Text style={styles.instructionText}>DRAG</Text>
+          </View>
+          <Text style={styles.instructionGap}>→</Text>
+          <View style={styles.instructionPill}>
+            <Text style={styles.instructionText}>AUTO FIRE</Text>
+          </View>
+          <Text style={styles.instructionGap}>•</Text>
+          <View style={styles.instructionPill}>
+            <Text style={styles.instructionText}>COLLECT POWER-UPS</Text>
+          </View>
         </View>
       </Animated.View>
 
@@ -144,75 +173,94 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 50,
+    marginBottom: 44,
   },
-  logo: {
-    width: 220,
-    height: 220,
-    borderRadius: 48,
-  },
-  highScoreContainer: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  highScoreLabel: {
-    color: '#888',
-    fontSize: 12,
-    letterSpacing: 3,
-    fontWeight: '600',
-  },
-  highScoreValue: {
-    color: COLORS.combo,
-    fontSize: 32,
-    fontWeight: 'bold',
-    fontVariant: ['tabular-nums'],
-  },
-  playButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 60,
-    backgroundColor: COLORS.player,
-    borderRadius: 12,
+  logoGlow: {
+    width: 150,
+    height: 150,
+    borderRadius: 36,
+    backgroundColor: 'rgba(0,229,255,0.08)',
     shadowColor: COLORS.player,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowRadius: 28,
+    padding: 6,
   },
-  playButtonText: {
-    color: '#000',
-    fontSize: 20,
-    fontWeight: 'bold',
-    letterSpacing: 4,
+  logo: {
+    width: 138,
+    height: 138,
+    borderRadius: 30,
   },
-  settingsButton: {
-    marginTop: 20,
-    paddingVertical: 12,
-    paddingHorizontal: 40,
+  title: {
+    marginTop: 18,
+    color: '#fff',
+    fontSize: 30,
+    fontWeight: '900',
+    letterSpacing: 5,
+    textShadowColor: hexToRgba(COLORS.player, 0.8),
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 16,
+  },
+  subtitle: {
+    marginTop: 6,
+    color: '#8ab8c2',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 4.5,
+  },
+  highScoreContainer: {
+    alignItems: 'center',
+    marginBottom: 36,
+  },
+  highScoreCard: {
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#444',
-    borderRadius: 10,
+    borderColor: hexToRgba(COLORS.combo, 0.35),
+    paddingVertical: 10,
+    paddingHorizontal: 28,
+    alignItems: 'center',
   },
-  settingsButtonText: {
-    color: '#999',
-    fontSize: 14,
-    fontWeight: '600',
+  highScoreLabel: {
+    color: hexToRgba(COLORS.combo, 0.7),
+    fontSize: 10,
     letterSpacing: 3,
+    fontWeight: '700',
+  },
+  highScoreValue: {
+    color: COLORS.combo,
+    fontSize: 30,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+    textShadowColor: COLORS.combo,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
+  },
+  settingsSpacing: {
+    marginTop: 20,
   },
   instructions: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 40,
-    gap: 10,
+    gap: 8,
+  },
+  instructionPill: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   instructionText: {
-    color: '#555',
-    fontSize: 11,
-    letterSpacing: 1,
-    fontWeight: '600',
+    color: '#7a86a8',
+    fontSize: 9,
+    letterSpacing: 1.5,
+    fontWeight: '700',
   },
-  instructionDot: {
-    color: '#333',
-    fontSize: 8,
+  instructionGap: {
+    color: '#3a4a6a',
+    fontSize: 10,
   },
   bannerContainer: {
     alignItems: 'center',

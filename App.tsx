@@ -7,6 +7,13 @@ import { SettingsScreen } from './src/screens/SettingsScreen';
 import { GameScreenType, SavedGameState, GameSettings } from './src/types';
 import { DEFAULT_SETTINGS } from './src/constants';
 import { initAds, showAppOpenAd } from './src/ads/AdService';
+import { soundManager } from './src/audio/SoundManager';
+import {
+  loadSettings,
+  saveSettings,
+  loadHighScore,
+  saveHighScore,
+} from './src/storage';
 
 export default function App() {
   const [screen, setScreen] = useState<GameScreenType>('menu');
@@ -17,6 +24,43 @@ export default function App() {
   const [savedGameState, setSavedGameState] = useState<SavedGameState | null>(null);
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
   const appOpenShownRef = useRef(false);
+  const hydratedRef = useRef(false);
+
+  useEffect(() => {
+    soundManager.initialize();
+    return () => soundManager.release();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [storedSettings, storedHighScore] = await Promise.all([
+        loadSettings(),
+        loadHighScore(),
+      ]);
+      if (cancelled) return;
+      if (storedSettings) setSettings(storedSettings);
+      if (storedHighScore > 0) setHighScore(storedHighScore);
+      hydratedRef.current = true;
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    soundManager.setEnabled(settings.soundEffects);
+  }, [settings.soundEffects]);
+
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    saveSettings(settings);
+  }, [settings]);
+
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    saveHighScore(highScore);
+  }, [highScore]);
 
   useEffect(() => {
     initAds().then(() => {
@@ -88,6 +132,7 @@ export default function App() {
           onBack={handleBack}
           savedState={savedGameState}
           settings={settings}
+          onUpdateSettings={handleSettingsChange}
         />
       )}
       {screen === 'gameOver' && (

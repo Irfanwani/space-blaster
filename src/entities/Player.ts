@@ -57,6 +57,17 @@ export function movePlayer(
     player.position.y += (dy / dist) * moveSpeed;
   }
 
+  const prevX = player.smoothX;
+  const prevY = player.smoothY;
+  if (dt > 0) {
+    const vx = (player.position.x - prevX) / dt;
+    const vy = (player.position.y - prevY) / dt;
+    player.velocity.x = smoothStep(player.velocity.x, vx, Math.min(dt * 10, 1));
+    player.velocity.y = smoothStep(player.velocity.y, vy, Math.min(dt * 10, 1));
+  }
+  player.smoothX = player.position.x;
+  player.smoothY = player.position.y;
+
   const targetAngle = clamp(dx * 0.02, -0.25, 0.25);
   player.visualAngle = smoothStep(player.visualAngle, targetAngle, Math.min(dt * 8, 1));
 
