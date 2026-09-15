@@ -62,10 +62,13 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
     }
 
     let frame: number;
+    let step = 0;
     const animate = () => {
       updateStars(starsRef.current, 1 / 60);
       updateNebulae(nebulaeRef.current, 1 / 60);
-      setTick((t) => t + 1);
+      if (step++ % 2 === 0) {
+        setTick((t) => t + 1);
+      }
       frame = requestAnimationFrame(animate);
     };
     frame = requestAnimationFrame(animate);

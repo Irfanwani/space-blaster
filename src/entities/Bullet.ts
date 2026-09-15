@@ -2,8 +2,6 @@ import { BulletEntity, GameState, Vec2 } from '../types';
 import { BULLET, SCREEN } from '../constants';
 import { generateId, normalize, findNearestEnemy, angleBetween, lerpAngle } from '../utils';
 
-const MAX_TRAIL = 5;
-
 export function createPlayerBullet(
   state: GameState,
   position: { x: number; y: number },
@@ -120,12 +118,7 @@ export function updateBullets(state: GameState): void {
       }
     }
 
-    if (bullet.trail && bullet.trailPositions.length > 0) {
-      bullet.trailPositions.unshift({ ...bullet.position });
-      if (bullet.trailPositions.length > MAX_TRAIL) {
-        bullet.trailPositions.pop();
-      }
-    } else if (bullet.trail) {
+    if (bullet.trail && bullet.trailPositions.length === 0) {
       bullet.trailPositions = [{ ...bullet.position }];
     }
 

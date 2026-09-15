@@ -8,71 +8,39 @@ interface BulletViewProps {
   bullet: BulletEntity;
 }
 
+const TRAIL_LENGTH = 34;
+
+// Each bullet is a single stretched gradient that fades behind its travel
+// direction — this replaces the old multi-view trail (5 trail copies + glow +
+// core per bullet) with one native view, which is what dominates cost when the
+// player spams many streams of bullets.
 export const BulletView: React.FC<BulletViewProps> = ({ bullet }) => {
+  const speed = Math.hypot(bullet.velocity.x, bullet.velocity.y) || 1;
+  const dx = bullet.velocity.x / speed;
+  const dy = bullet.velocity.y / speed;
+
+  const length = bullet.height + TRAIL_LENGTH;
+  const width = bullet.width + 2;
+
+  const cx = bullet.position.x - dx * (length / 2);
+  const cy = bullet.position.y - dy * (length / 2);
+
   return (
     <>
-      {bullet.trail &&
-        bullet.trailPositions.map((pos, i) => {
-          const trailOpacity = (i + 1) / (bullet.trailPositions.length + 2) * 0.45;
-          const trailSize = (i + 1) / (bullet.trailPositions.length + 2);
-          return (
-            <LinearGradient
-              key={`trail-${i}`}
-              colors={[bullet.color, hexToRgba(bullet.color, 0.2)]}
-              start={{ x: 0.5, y: 0 }}
-              end={{ x: 0.5, y: 1 }}
-              style={{
-                position: 'absolute',
-                left: pos.x - (bullet.width * trailSize) / 2,
-                top: pos.y - (bullet.height * trailSize * 0.6) / 2,
-                width: bullet.width * trailSize + 2,
-                height: bullet.height * trailSize * 0.6,
-                borderRadius: (bullet.width * trailSize + 2) / 2,
-                opacity: trailOpacity,
-              }}
-            />
-          );
-        })}
-
       <LinearGradient
-        colors={[bullet.color, hexToRgba(bullet.color, 0.1)]}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
+        colors={[hexToRgba(bullet.color, 0.06), bullet.color, '#ffffff']}
+        locations={[0, 0.55, 1]}
+        start={{ x: 0.5 - dx * 0.5, y: 0.5 - dy * 0.5 }}
+        end={{ x: 0.5 + dx * 0.5, y: 0.5 + dy * 0.5 }}
         style={{
           position: 'absolute',
-          left: bullet.position.x - bullet.width / 2 - 3,
-          top: bullet.position.y - bullet.height / 2 - 3,
-          width: bullet.width + 6,
-          height: bullet.height + 6,
-          borderRadius: (bullet.width + 6) / 2,
-          opacity: 0.35,
-          shadowColor: bullet.color,
-          shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: 0.8,
-          shadowRadius: 10,
+          left: cx - width / 2,
+          top: cy - length / 2,
+          width,
+          height: length,
+          borderRadius: width / 2,
         }}
       />
-
-      <LinearGradient
-        colors={['#ffffff', bullet.color, hexToRgba(bullet.color, 0.3)]}
-        locations={[0, 0.7, 1]}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={{
-          position: 'absolute',
-          left: bullet.position.x - bullet.width / 2,
-          top: bullet.position.y - bullet.height / 2,
-          width: bullet.width,
-          height: bullet.height,
-          borderRadius: bullet.width / 2,
-          shadowColor: bullet.color,
-          shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: 0.9,
-          shadowRadius: 5,
-          elevation: 5,
-        }}
-      />
-
       {bullet.homing && (
         <View
           style={{
@@ -82,12 +50,9 @@ export const BulletView: React.FC<BulletViewProps> = ({ bullet }) => {
             width: 8,
             height: 8,
             borderRadius: 4,
-            backgroundColor: hexToRgba('#448aff', 0.4),
-            opacity: 0.5,
-            shadowColor: '#448aff',
-            shadowOffset: { width: 0, height: 0 },
-            shadowOpacity: 0.9,
-            shadowRadius: 7,
+            borderWidth: 1,
+            borderColor: hexToRgba('#448aff', 0.6),
+            backgroundColor: hexToRgba('#448aff', 0.25),
           }}
         />
       )}

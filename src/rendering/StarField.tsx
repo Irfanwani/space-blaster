@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Star, Nebula } from '../types';
@@ -9,6 +9,16 @@ interface StarFieldProps {
   stars: Star[];
   nebulae: Nebula[];
 }
+
+// Static layer: the full-screen background gradient never changes, so it is
+// memoized to avoid repainting it (and re-diffing it) on every game frame.
+const StarBG = memo(() => (
+  <LinearGradient
+    colors={['#03030c', COLORS.backgroundDeep, '#0a0a24']}
+    locations={[0, 0.55, 1]}
+    style={StyleSheet.absoluteFill}
+  />
+));
 
 function createStar(layer: number = 0): Star {
   const layerConfigs = [
@@ -93,11 +103,7 @@ export const StarField: React.FC<StarFieldProps> = ({ stars, nebulae }) => {
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#03030c', COLORS.backgroundDeep, '#0a0a24']}
-        locations={[0, 0.55, 1]}
-        style={StyleSheet.absoluteFill}
-      />
+      <StarBG />
 
       {nebulae.map((nebula, i) => {
         const core = nebula.color.replace(/[\d.]+\)$/, '0.22)');
@@ -141,12 +147,8 @@ export const StarField: React.FC<StarFieldProps> = ({ stars, nebulae }) => {
         const size = isNear ? star.size * 1.25 : star.size;
 
         return (
-          <LinearGradient
+          <View
             key={i}
-            colors={isNear ? [starColor, starColor, hexA(starColor, 0.25)] : [starColor, starColor]}
-            locations={isNear ? [0, 0.45, 1] : [0, 1]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
             style={{
               position: 'absolute',
               left: star.x - size / 2,
@@ -154,11 +156,8 @@ export const StarField: React.FC<StarFieldProps> = ({ stars, nebulae }) => {
               width: size,
               height: streak,
               borderRadius: isNear ? 1.5 : size / 2,
+              backgroundColor: starColor,
               opacity: star.brightness * twinkle,
-              shadowColor: starColor,
-              shadowOffset: { width: 0, height: 0 },
-              shadowOpacity: star.layer >= 3 ? 0.9 : 0,
-              shadowRadius: star.layer >= 3 ? star.size : 0,
             }}
           />
         );
@@ -166,15 +165,6 @@ export const StarField: React.FC<StarFieldProps> = ({ stars, nebulae }) => {
     </View>
   );
 };
-
-function hexA(color: string, alpha: number): string {
-  if (color.length === 7) {
-    return `${color}${Math.round(alpha * 255)
-      .toString(16)
-      .padStart(2, '0')}`;
-  }
-  return color;
-}
 
 const styles = StyleSheet.create({
   container: {

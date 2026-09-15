@@ -1,6 +1,5 @@
 import React from 'react';
 import { View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { ParticleEntity } from '../types';
 import { hexToRgba } from '../utils';
 
@@ -8,6 +7,8 @@ interface ParticleViewProps {
   particle: ParticleEntity;
 }
 
+// Cheap glow ring drawn with two plain Views instead of shadow-based glows
+// (Android shadows are very expensive when hundreds of views re-render/frame).
 export const ParticleView: React.FC<ParticleViewProps> = ({ particle }) => {
   const progress = 1 - particle.lifetime / particle.maxLifetime;
   const opacity = Math.max(0, particle.lifetime / particle.maxLifetime);
@@ -17,14 +18,7 @@ export const ParticleView: React.FC<ParticleViewProps> = ({ particle }) => {
   if (particle.isShockwave) {
     const ringSize = size * (0.2 + progress * 0.8);
     return (
-      <LinearGradient
-        colors={[
-          hexToRgba(particle.color, 0),
-          hexToRgba(particle.color, opacity),
-          'transparent',
-        ]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+      <View
         style={{
           position: 'absolute',
           left: particle.position.x - ringSize / 2,
@@ -35,10 +29,7 @@ export const ParticleView: React.FC<ParticleViewProps> = ({ particle }) => {
           opacity,
           borderWidth: 2,
           borderColor: hexToRgba(particle.color, Math.min(1, opacity * 1.5)),
-          shadowColor: particle.color,
-          shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: opacity,
-          shadowRadius: ringSize * 0.15,
+          backgroundColor: hexToRgba(particle.color, opacity * 0.12),
         }}
       />
     );
@@ -46,32 +37,37 @@ export const ParticleView: React.FC<ParticleViewProps> = ({ particle }) => {
 
   if (isFlash) {
     return (
-      <LinearGradient
-        colors={['#ffffff', particle.color, hexToRgba(particle.color, 0.1)]}
-        start={{ x: 0.5, y: 0.5 }}
-        end={{ x: 1, y: 1 }}
-        style={{
-          position: 'absolute',
-          left: particle.position.x - size / 2,
-          top: particle.position.y - size / 2,
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          opacity: opacity,
-          shadowColor: particle.color,
-          shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: opacity * 0.9,
-          shadowRadius: size * 0.6,
-        }}
-      />
+      <>
+        <View
+          style={{
+            position: 'absolute',
+            left: particle.position.x - size / 2,
+            top: particle.position.y - size / 2,
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            opacity: opacity * 0.3,
+            backgroundColor: particle.color,
+          }}
+        />
+        <View
+          style={{
+            position: 'absolute',
+            left: particle.position.x - size * 0.4,
+            top: particle.position.y - size * 0.4,
+            width: size * 0.8,
+            height: size * 0.8,
+            borderRadius: size * 0.4,
+            opacity: opacity,
+            backgroundColor: '#ffffff',
+          }}
+        />
+      </>
     );
   }
 
   return (
-    <LinearGradient
-      colors={[particle.color, hexToRgba(particle.color, 0.15)]}
-      start={{ x: 0.5, y: 0.5 }}
-      end={{ x: 0.5, y: 1 }}
+    <View
       style={{
         position: 'absolute',
         left: particle.position.x - size / 2,
@@ -80,10 +76,7 @@ export const ParticleView: React.FC<ParticleViewProps> = ({ particle }) => {
         height: size,
         borderRadius: size / 2,
         opacity: opacity * 0.9,
-        shadowColor: particle.color,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: opacity * 0.5,
-        shadowRadius: size * 0.35,
+        backgroundColor: particle.color,
       }}
     />
   );

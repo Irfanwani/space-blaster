@@ -140,7 +140,7 @@ export const COLORS = {
 };
 
 export const DEFAULT_SETTINGS: GameSettings = {
-  starCount: 120,
+  starCount: 90,
   particleQuality: 'high',
   screenShake: true,
   showFPS: false,

@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-export const VignetteOverlay: React.FC = () => {
+export const VignetteOverlay: React.FC = memo(() => {
   const rows: React.ReactNode[] = [];
   for (let i = 0; i < 60; i++) {
     rows.push(
@@ -37,7 +37,7 @@ export const VignetteOverlay: React.FC = () => {
       {rows}
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

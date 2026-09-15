@@ -20,6 +20,7 @@ function getAdUnitId(type: 'appOpen' | 'interstitial' | 'rewarded' | 'banner'): 
 let appOpenAd: AppOpenAd | null = null;
 let interstitialAd: InterstitialAd | null = null;
 let rewardedAd: RewardedAd | null = null;
+let interstitialReady = false;
 let initialized = false;
 
 export async function initAds(): Promise<void> {
@@ -28,6 +29,7 @@ export async function initAds(): Promise<void> {
     await mobileAds().initialize();
     initialized = true;
     preloadAppOpenAd();
+    preloadInterstitial();
   } catch (e) {
     console.warn('[Ads] Init failed:', e);
   }
@@ -78,7 +80,17 @@ export function preloadInterstitial(): void {
   try {
     const id = getAdUnitId('interstitial');
     if (isValidAdUnitId(id)) {
+      interstitialReady = false;
+      if (interstitialAd) {
+        interstitialAd.removeAllListeners();
+      }
       interstitialAd = InterstitialAd.createForAdRequest(id);
+      interstitialAd.addAdEventListener(AdEventType.LOADED, () => {
+        interstitialReady = true;
+      });
+      interstitialAd.addAdEventListener(AdEventType.ERROR, () => {
+        interstitialReady = false;
+      });
       interstitialAd.load();
     }
   } catch (e) {
@@ -86,33 +98,47 @@ export function preloadInterstitial(): void {
   }
 }
 
+export function isInterstitialReady(): boolean {
+  return interstitialReady && interstitialAd !== null;
+}
+
 export function showInterstitialAd(): Promise<boolean> {
   return new Promise((resolve) => {
-    if (!interstitialAd || !isValidAdUnitId(getAdUnitId('interstitial'))) {
+    if (
+      !interstitialReady ||
+      !interstitialAd ||
+      !isValidAdUnitId(getAdUnitId('interstitial'))
+    ) {
       resolve(false);
       preloadInterstitial();
       return;
     }
 
-    const unsubLoaded = interstitialAd.addAdEventListener(AdEventType.LOADED, () => {
-      unsubLoaded();
-      unsubError();
-      interstitialAd!.show();
-    });
+    let settled = false;
+    const settle = (value: boolean) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(safetyTimer);
+      resolve(value);
+    };
+
+    const safetyTimer = setTimeout(() => {
+      settle(false);
+      preloadInterstitial();
+    }, 30000);
 
     const unsubError = interstitialAd.addAdEventListener(AdEventType.ERROR, () => {
-      unsubLoaded();
       unsubError();
-      resolve(false);
+      settle(false);
     });
 
     const unsubClosed = interstitialAd.addAdEventListener(AdEventType.CLOSED, () => {
       unsubClosed();
       preloadInterstitial();
-      resolve(true);
+      settle(true);
     });
 
-    interstitialAd.load();
+    interstitialAd.show();
   });
 }
 

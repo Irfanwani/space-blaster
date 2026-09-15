@@ -41,11 +41,14 @@ import { PowerUpView } from '../rendering/PowerUpView';
 import { HUD } from '../rendering/HUD';
 import { VignetteOverlay } from '../rendering/VignetteOverlay';
 import { checkCollisions } from '../game/collision';
-import { shouldShowInterstitial, showInterstitialAd } from '../ads/AdService';
+import { shouldShowInterstitial, showInterstitialAd, isInterstitialReady } from '../ads/AdService';
 import { playSound } from '../audio/SoundManager';
 import { SettingsScreen } from './SettingsScreen';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+const MAX_PARTICLES = 160;
+const MAX_BULLETS = 90;
 
 interface GameScreenProps {
   onGameOver: (score: number, wave: number, savedState: SavedGameState) => void;
@@ -156,6 +159,8 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   const fireRateFor = (settings: GameSettings) =>
     stateRef.current.player.rapidFire ? 80 : stateRef.current.player.fireRate;
 
+  const lastShotFxRef = useRef(0);
+
   const firePlayerWeapon = (state: GameState) => {
     const muzzleY = state.player.position.y - state.player.height / 2;
     const newBullets = createPlayerBullet(
@@ -177,18 +182,26 @@ export const GameScreen: React.FC<GameScreenProps> = ({
         ? 1
         : 1.5;
 
-    if (effectMult > 0) {
+    // Throttle muzzle-flash/ring particles so rapid-fire pairs don't flood the
+    // particle list (bullets still fire every shot; only the flash is limited).
+    const fxNow = performance.now();
+    const showFx = fxNow - lastShotFxRef.current >= 110;
+    if (showFx) {
+      lastShotFxRef.current = fxNow;
+    }
+
+    if (effectMult > 0 && showFx) {
       const gunOffsetX = state.player.width * 0.28;
       state.particles.push(
         ...createMuzzleFlash(
           { x: state.player.position.x + gunOffsetX, y: muzzleY },
-          state.player.multiShot ? 4 : 3
+          state.player.multiShot ? 3 : 2
         )
       );
       state.particles.push(
         ...createMuzzleFlash(
           { x: state.player.position.x - gunOffsetX, y: muzzleY },
-          state.player.multiShot ? 4 : 3
+          state.player.multiShot ? 3 : 2
         )
       );
       state.particles.push(
@@ -241,8 +254,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     movePlayer(state, targetRef.current.x, targetRef.current.y);
 
     state.waveTimer += dt;
-    const activeEnemies = state.enemies.filter((e) => e.active);
-    if (activeEnemies.length === 0 && state.waveTimer > state.waveCooldown) {
+    if (state.enemies.length === 0 && state.waveTimer > state.waveCooldown) {
       state.wave++;
       state.waveTimer = 0;
       spawnWave(state);
@@ -250,11 +262,12 @@ export const GameScreen: React.FC<GameScreenProps> = ({
 
       if (
         shouldShowInterstitial(state.wave) &&
+        isInterstitialReady() &&
         state.wave !== lastInterstitialWaveRef.current
       ) {
         lastInterstitialWaveRef.current = state.wave;
         pausedRef.current = true;
-        showInterstitialAd().then(() => {
+        showInterstitialAd().catch(() => {}).finally(() => {
           pausedRef.current = false;
           lastTimeRef.current = performance.now();
         });
@@ -440,8 +453,8 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     }
 
     state.enemies = state.enemies.filter((e) => e.active);
-    state.bullets = state.bullets.filter((b) => b.active);
-    state.particles = state.particles.filter((p) => p.active);
+    state.bullets = state.bullets.filter((b) => b.active).slice(-MAX_BULLETS);
+    state.particles = state.particles.filter((p) => p.active).slice(-MAX_PARTICLES);
     state.powerUps = state.powerUps.filter((p) => p.active);
 
     forceRender((n) => n + 1);
